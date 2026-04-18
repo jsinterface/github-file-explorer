@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileGraph } from "@/components/FileGraph";
 import { ImportGraphView } from "@/components/ImportGraph";
+import { SymbolGraphView } from "@/components/SymbolGraph";
 import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
+import { buildSymbolGraph, type SymbolGraph } from "@/lib/symbolGraph";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -68,7 +70,7 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
   return root;
 }
 
-type ViewMode = "json" | "graph" | "imports";
+type ViewMode = "json" | "graph" | "imports" | "symbols";
 
 function Index() {
   const [input, setInput] = useState("d3/d3");
@@ -78,12 +80,14 @@ function Index() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FetchResult | null>(null);
   const [importGraph, setImportGraph] = useState<ImportGraph | null>(null);
+  const [symbolGraph, setSymbolGraph] = useState<SymbolGraph | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setResult(null);
     setImportGraph(null);
+    setSymbolGraph(null);
 
     const parsed = parseRepoInput(input);
     if (!parsed) {
@@ -101,14 +105,24 @@ function Index() {
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
 
-      if (view === "imports") {
-        const graph = await buildImportGraph(
-          parsed.owner,
-          parsed.repo,
-          branch,
-          (msg) => setProgress(msg),
-        );
-        setImportGraph(graph);
+      if (view === "imports" || view === "symbols") {
+        if (view === "imports") {
+          const graph = await buildImportGraph(
+            parsed.owner,
+            parsed.repo,
+            branch,
+            (msg) => setProgress(msg),
+          );
+          setImportGraph(graph);
+        } else {
+          const graph = await buildSymbolGraph(
+            parsed.owner,
+            parsed.repo,
+            branch,
+            (msg) => setProgress(msg),
+          );
+          setSymbolGraph(graph);
+        }
         setResult({
           repo: `${parsed.owner}/${parsed.repo}`,
           branch,
@@ -182,11 +196,18 @@ function Index() {
                 <TabsTrigger value="json">JSON</TabsTrigger>
                 <TabsTrigger value="graph">Files</TabsTrigger>
                 <TabsTrigger value="imports">Imports</TabsTrigger>
+                <TabsTrigger value="symbols">Symbols</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <Button type="submit" disabled={loading}>
-            {loading ? "Loading…" : view === "imports" ? "Analyze imports" : "Fetch tree"}
+            {loading
+              ? "Loading…"
+              : view === "imports"
+                ? "Analyze imports"
+                : view === "symbols"
+                  ? "Analyze symbols"
+                  : "Fetch tree"}
           </Button>
         </form>
 
@@ -207,9 +228,17 @@ function Index() {
             <div className="mb-3 text-xs text-muted-foreground">
               <span className="font-mono">{result.repo}</span> · branch{" "}
               <span className="font-mono">{result.branch}</span>
-              {view !== "imports" && <> · {result.items.length} entries</>}
+              {view !== "imports" && view !== "symbols" && (
+                <> · {result.items.length} entries</>
+              )}
               {view === "imports" && importGraph && (
                 <> · {importGraph.fileCount} source files</>
+              )}
+              {view === "symbols" && symbolGraph && (
+                <>
+                  {" "}
+                  · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols
+                </>
               )}
               {result.truncated && " · truncated"}
             </div>
@@ -222,6 +251,7 @@ function Index() {
               <FileGraph items={result.items} rootLabel={result.repo} />
             )}
             {view === "imports" && importGraph && <ImportGraphView data={importGraph} />}
+            {view === "symbols" && symbolGraph && <SymbolGraphView data={symbolGraph} />}
           </div>
         )}
       </div>
