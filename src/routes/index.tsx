@@ -67,7 +67,7 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
 }
 
 function Index() {
-  const [input, setInput] = useState("facebook/react");
+  const [input, setInput] = useState("sindresorhus/slugify");
   const [view, setView] = useState<"json" | "graph">("json");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
