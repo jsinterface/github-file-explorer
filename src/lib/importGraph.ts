@@ -99,7 +99,7 @@ export async function buildImportGraph(
   onProgress?: (msg: string) => void,
 ): Promise<ImportGraph> {
   onProgress?.("Downloading repository archive…");
-  const url = `https://api.github.com/repos/${owner}/${repo}/zipball/${branch}`;
+  const url = `/api/zipball?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(branch)}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to download archive (${res.status})`);
   const buf = await res.arrayBuffer();

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "@tanstack/react-start";
 
 export const Route = createFileRoute("/api/zipball")({
   server: {
