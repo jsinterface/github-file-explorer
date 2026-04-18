@@ -146,6 +146,11 @@ export function FileGraph({
       .text((d) => d.data.name)
       .append("title")
       .text((d) => d.data.path || rootLabel);
+
+    return () => {
+      svg.on(".zoom", null);
+      svg.selectAll("*").remove();
+    };
   }, [items, rootLabel]);
 
   return (
