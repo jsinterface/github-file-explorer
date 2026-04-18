@@ -70,7 +70,7 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
   return root;
 }
 
-type ViewMode = "json" | "graph" | "imports";
+type ViewMode = "json" | "graph" | "imports" | "symbols";
 
 function Index() {
   const [input, setInput] = useState("d3/d3");
@@ -80,12 +80,14 @@ function Index() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FetchResult | null>(null);
   const [importGraph, setImportGraph] = useState<ImportGraph | null>(null);
+  const [symbolGraph, setSymbolGraph] = useState<SymbolGraph | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setResult(null);
     setImportGraph(null);
+    setSymbolGraph(null);
 
     const parsed = parseRepoInput(input);
     if (!parsed) {
