@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileGraph } from "@/components/FileGraph";
 import { ImportGraphView } from "@/components/ImportGraph";
+import { SymbolGraphView } from "@/components/SymbolGraph";
 import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
+import { buildSymbolGraph, type SymbolGraph } from "@/lib/symbolGraph";
 
 export const Route = createFileRoute("/")({
   component: Index,
