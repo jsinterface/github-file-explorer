@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileGraph } from "@/components/FileGraph";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ImportGraphView } from "@/components/ImportGraph";
 import { SymbolGraphView } from "@/components/SymbolGraph";
 import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
@@ -165,14 +166,17 @@ function Index() {
   return (
     <div className="min-h-screen bg-background px-4 py-12">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            GitHub Repo Explorer
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Enter a repository (e.g. <code className="font-mono">facebook/react</code>) to
-            view its files and folders as JSON or as a D3 graph.
-          </p>
+        <header className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              GitHub Repo Explorer
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Enter a repository (e.g. <code className="font-mono">facebook/react</code>) to
+              view its files and folders as JSON or as a D3 graph.
+            </p>
+          </div>
+          <ThemeToggle />
         </header>
 
         <form
