@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { FileGraph } from "@/components/FileGraph";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -21,6 +23,14 @@ type NestedNode = {
   name: string;
   type: "file" | "folder";
   children?: Record<string, NestedNode>;
+};
+
+type FetchResult = {
+  repo: string;
+  branch: string;
+  truncated: boolean;
+  items: TreeItem[];
+  json: string;
 };
 
 function parseRepoInput(input: string): { owner: string; repo: string } | null {
@@ -58,9 +68,10 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
 
 function Index() {
   const [input, setInput] = useState("facebook/react");
+  const [view, setView] = useState<"json" | "graph">("json");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<FetchResult | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -87,16 +98,23 @@ function Index() {
       );
       if (!treeRes.ok) throw new Error(`Failed to fetch tree (${treeRes.status})`);
       const treeData = await treeRes.json();
+      const items = treeData.tree as TreeItem[];
 
-      const nested = buildTree(treeData.tree as TreeItem[]);
+      const nested = buildTree(items);
       const output = {
         repository: `${parsed.owner}/${parsed.repo}`,
         branch,
         truncated: !!treeData.truncated,
-        total_entries: (treeData.tree as TreeItem[]).length,
+        total_entries: items.length,
         tree: nested,
       };
-      setResult(JSON.stringify(output, null, 2));
+      setResult({
+        repo: `${parsed.owner}/${parsed.repo}`,
+        branch,
+        truncated: !!treeData.truncated,
+        items,
+        json: JSON.stringify(output, null, 2),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -106,18 +124,21 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background px-4 py-12">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             GitHub Repo Explorer
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Enter a repository (e.g. <code className="font-mono">facebook/react</code>) to
-            view its files and folders as JSON.
+            view its files and folders as JSON or as a D3 graph.
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
           <div className="flex-1">
             <Label htmlFor="repo">Repository</Label>
             <Input
@@ -127,6 +148,15 @@ function Index() {
               placeholder="owner/name or https://github.com/owner/name"
               className="mt-1.5"
             />
+          </div>
+          <div className="flex flex-col">
+            <Label className="mb-1.5">View</Label>
+            <Tabs value={view} onValueChange={(v) => setView(v as "json" | "graph")}>
+              <TabsList>
+                <TabsTrigger value="json">JSON</TabsTrigger>
+                <TabsTrigger value="graph">Graph</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
           <Button type="submit" disabled={loading}>
             {loading ? "Loading…" : "Fetch tree"}
@@ -140,9 +170,24 @@ function Index() {
         )}
 
         {result && (
-          <pre className="mt-6 max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
-            {result}
-          </pre>
+          <div className="mt-6">
+            <div className="mb-3 text-xs text-muted-foreground">
+              <span className="font-mono">{result.repo}</span> · branch{" "}
+              <span className="font-mono">{result.branch}</span> · {result.items.length}{" "}
+              entries
+              {result.truncated && " · truncated"}
+            </div>
+            <Tabs value={view} onValueChange={(v) => setView(v as "json" | "graph")}>
+              <TabsContent value="json" className="mt-0">
+                <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
+                  {result.json}
+                </pre>
+              </TabsContent>
+              <TabsContent value="graph" className="mt-0">
+                <FileGraph items={result.items} rootLabel={result.repo} />
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
       </div>
     </div>
