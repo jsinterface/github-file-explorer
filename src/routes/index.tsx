@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileGraph } from "@/components/FileGraph";
+import { ImportGraphView } from "@/components/ImportGraph";
+import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -66,17 +68,22 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
   return root;
 }
 
+type ViewMode = "json" | "graph" | "imports";
+
 function Index() {
   const [input, setInput] = useState("d3/d3");
-  const [view, setView] = useState<"json" | "graph">("json");
+  const [view, setView] = useState<ViewMode>("json");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FetchResult | null>(null);
+  const [importGraph, setImportGraph] = useState<ImportGraph | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setResult(null);
+    setImportGraph(null);
 
     const parsed = parseRepoInput(input);
     if (!parsed) {
@@ -85,6 +92,7 @@ function Index() {
     }
 
     setLoading(true);
+    setProgress(null);
     try {
       const repoRes = await fetch(
         `https://api.github.com/repos/${parsed.owner}/${parsed.repo}`,
@@ -93,32 +101,50 @@ function Index() {
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
 
-      const treeRes = await fetch(
-        `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${branch}?recursive=1`,
-      );
-      if (!treeRes.ok) throw new Error(`Failed to fetch tree (${treeRes.status})`);
-      const treeData = await treeRes.json();
-      const items = treeData.tree as TreeItem[];
+      if (view === "imports") {
+        const graph = await buildImportGraph(
+          parsed.owner,
+          parsed.repo,
+          branch,
+          (msg) => setProgress(msg),
+        );
+        setImportGraph(graph);
+        setResult({
+          repo: `${parsed.owner}/${parsed.repo}`,
+          branch,
+          truncated: false,
+          items: [],
+          json: "",
+        });
+      } else {
+        const treeRes = await fetch(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${branch}?recursive=1`,
+        );
+        if (!treeRes.ok) throw new Error(`Failed to fetch tree (${treeRes.status})`);
+        const treeData = await treeRes.json();
+        const items = treeData.tree as TreeItem[];
 
-      const nested = buildTree(items);
-      const output = {
-        repository: `${parsed.owner}/${parsed.repo}`,
-        branch,
-        truncated: !!treeData.truncated,
-        total_entries: items.length,
-        tree: nested,
-      };
-      setResult({
-        repo: `${parsed.owner}/${parsed.repo}`,
-        branch,
-        truncated: !!treeData.truncated,
-        items,
-        json: JSON.stringify(output, null, 2),
-      });
+        const nested = buildTree(items);
+        const output = {
+          repository: `${parsed.owner}/${parsed.repo}`,
+          branch,
+          truncated: !!treeData.truncated,
+          total_entries: items.length,
+          tree: nested,
+        };
+        setResult({
+          repo: `${parsed.owner}/${parsed.repo}`,
+          branch,
+          truncated: !!treeData.truncated,
+          items,
+          json: JSON.stringify(output, null, 2),
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   }
 
@@ -151,17 +177,24 @@ function Index() {
           </div>
           <div className="flex flex-col">
             <Label className="mb-1.5">View</Label>
-            <Tabs value={view} onValueChange={(v) => setView(v as "json" | "graph")}>
+            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
               <TabsList>
                 <TabsTrigger value="json">JSON</TabsTrigger>
-                <TabsTrigger value="graph">Graph</TabsTrigger>
+                <TabsTrigger value="graph">Files</TabsTrigger>
+                <TabsTrigger value="imports">Imports</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <Button type="submit" disabled={loading}>
-            {loading ? "Loading…" : "Fetch tree"}
+            {loading ? "Loading…" : view === "imports" ? "Analyze imports" : "Fetch tree"}
           </Button>
         </form>
+
+        {loading && progress && (
+          <div className="mt-6 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+            {progress}
+          </div>
+        )}
 
         {error && (
           <div className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -173,17 +206,22 @@ function Index() {
           <div className="mt-6">
             <div className="mb-3 text-xs text-muted-foreground">
               <span className="font-mono">{result.repo}</span> · branch{" "}
-              <span className="font-mono">{result.branch}</span> · {result.items.length}{" "}
-              entries
+              <span className="font-mono">{result.branch}</span>
+              {view !== "imports" && <> · {result.items.length} entries</>}
+              {view === "imports" && importGraph && (
+                <> · {importGraph.fileCount} source files</>
+              )}
               {result.truncated && " · truncated"}
             </div>
-            {view === "json" ? (
+            {view === "json" && (
               <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
                 {result.json}
               </pre>
-            ) : (
+            )}
+            {view === "graph" && (
               <FileGraph items={result.items} rootLabel={result.repo} />
             )}
+            {view === "imports" && importGraph && <ImportGraphView data={importGraph} />}
           </div>
         )}
       </div>
