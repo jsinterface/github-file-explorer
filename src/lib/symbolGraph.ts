@@ -211,12 +211,6 @@ function collectFile(
 
     ExportDefaultDeclaration(p) {
       const decl = p.node.declaration;
-      if (
-        decl.type === "TSTypeAliasDeclaration" ||
-        decl.type === "TSInterfaceDeclaration"
-      ) {
-        return;
-      }
       if (decl.type === "FunctionDeclaration" || decl.type === "FunctionExpression") {
         result.exports.set("__default__", {
           exportName: "default",
