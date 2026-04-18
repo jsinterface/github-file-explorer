@@ -85,17 +85,17 @@ export function FileGraph({
 
     const container = svg.append("g").attr("transform", `translate(${marginLeft}, 0)`);
 
-    svg.call(
-      d3
-        .zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.2, 4])
-        .on("zoom", (event) => {
-          container.attr(
-            "transform",
-            `translate(${marginLeft + event.transform.x}, ${event.transform.y}) scale(${event.transform.k})`,
-          );
-        }),
-    );
+    const zoomBehavior = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.2, 4])
+      .on("zoom", (event) => {
+        container.attr(
+          "transform",
+          `translate(${marginLeft + event.transform.x}, ${event.transform.y}) scale(${event.transform.k})`,
+        );
+      });
+
+    svg.call(zoomBehavior);
 
     const colorFor = (n: RawNode) => {
       if (n.kind === "root") return "var(--color-primary)";
