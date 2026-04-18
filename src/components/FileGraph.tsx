@@ -13,6 +13,8 @@ type RawNode = {
   children?: RawNode[];
 };
 
+const MAX_NODES = 1500;
+
 function buildHierarchy(items: TreeItem[], rootLabel: string): RawNode {
   const root: RawNode = { name: rootLabel, path: "", kind: "root", children: [] };
   const lookup = new Map<string, RawNode>();
@@ -44,9 +46,10 @@ export function FileGraph({
   rootLabel: string;
 }) {
   const ref = useRef<SVGSVGElement | null>(null);
+  const tooLarge = items.length > MAX_NODES;
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || tooLarge) return;
 
     const data = buildHierarchy(items, rootLabel);
     const root = d3.hierarchy<RawNode>(data, (d) => d.children);
@@ -151,7 +154,17 @@ export function FileGraph({
       svg.on(".zoom", null);
       svg.selectAll("*").remove();
     };
-  }, [items, rootLabel]);
+  }, [items, rootLabel, tooLarge]);
+
+  if (tooLarge) {
+    return (
+      <div className="rounded-md border border-border bg-muted p-6 text-sm text-muted-foreground">
+        This repository has {items.length.toLocaleString()} entries, which is too
+        many to render as a graph (limit: {MAX_NODES.toLocaleString()}). Switch to
+        the JSON view, or try a smaller repository.
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-md border border-border bg-muted">
