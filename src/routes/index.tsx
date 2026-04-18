@@ -177,16 +177,13 @@ function Index() {
               entries
               {result.truncated && " · truncated"}
             </div>
-            <Tabs value={view} onValueChange={(v) => setView(v as "json" | "graph")}>
-              <TabsContent value="json" className="mt-0">
-                <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
-                  {result.json}
-                </pre>
-              </TabsContent>
-              <TabsContent value="graph" className="mt-0">
-                <FileGraph items={result.items} rootLabel={result.repo} />
-              </TabsContent>
-            </Tabs>
+            {view === "json" ? (
+              <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
+                {result.json}
+              </pre>
+            ) : (
+              <FileGraph items={result.items} rootLabel={result.repo} />
+            )}
           </div>
         )}
       </div>
