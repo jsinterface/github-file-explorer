@@ -8,7 +8,7 @@ export type SymbolTreeNode =
 type RawNode = {
   id: string;
   name: string;
-  kind: "root" | "folder" | "file" | "export";
+  kind: "folder" | "file" | "export";
   children?: RawNode[];
 };
 
@@ -20,21 +20,20 @@ function isExportLeaf(v: unknown): v is Record<string, string[]> {
 }
 
 function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
-  root: RawNode;
-  // export label (e.g. "dir/file.ts:name") -> node id
+  // Forest of top-level folder/file trees (no synthetic root).
+  trees: RawNode[];
   labelToId: Map<string, string>;
-  // export id -> referenced labels
   refsByExport: Map<string, string[]>;
 } {
-  const root: RawNode = { id: "__root__", name: "/", kind: "root", children: [] };
+  const trees: RawNode[] = [];
   const labelToId = new Map<string, string>();
   const refsByExport = new Map<string, string[]>();
 
-  function walk(
+  function build(
     obj: Record<string, SymbolTreeNode>,
     pathParts: string[],
-    parent: RawNode,
-  ) {
+  ): RawNode[] {
+    const out: RawNode[] = [];
     for (const [name, child] of Object.entries(obj)) {
       const parts = [...pathParts, name];
       const path = parts.join("/");
@@ -45,34 +44,32 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
           kind: "file",
           children: [],
         };
-        parent.children!.push(fileNode);
         const shortFile = parts.slice(-2).join("/");
         for (const [exportName, refs] of Object.entries(child)) {
           const exportId = `export:${path}#${exportName}`;
-          const exportNode: RawNode = {
+          fileNode.children!.push({
             id: exportId,
             name: exportName,
             kind: "export",
-          };
-          fileNode.children!.push(exportNode);
+          });
           labelToId.set(`${shortFile}:${exportName}`, exportId);
           refsByExport.set(exportId, refs);
         }
+        out.push(fileNode);
       } else {
-        const folderNode: RawNode = {
+        out.push({
           id: `folder:${path}`,
           name,
           kind: "folder",
-          children: [],
-        };
-        parent.children!.push(folderNode);
-        walk(child as Record<string, SymbolTreeNode>, parts, folderNode);
+          children: build(child as Record<string, SymbolTreeNode>, parts),
+        });
       }
     }
+    return out;
   }
 
-  walk(tree, [], root);
-  return { root, labelToId, refsByExport };
+  trees.push(...build(tree, []));
+  return { trees, labelToId, refsByExport };
 }
 
 export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode> }) {
@@ -82,67 +79,122 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
   useEffect(() => {
     if (!ref.current) return;
 
-    const { root: rawRoot, labelToId, refsByExport } = built;
+    const { trees, labelToId, refsByExport } = built;
+    if (trees.length === 0) return;
 
-    // Vertical bottom-up tree: root at bottom, leaves (exports) at top.
-    // d3.tree() lays out with root at top by default; we'll flip Y at draw time.
-    const root = d3.hierarchy<RawNode>(rawRoot, (d) => d.children);
+    const size = 960;
+    const cx = size / 2;
+    const cy = size / 2;
 
-    const leafCount = Math.max(root.leaves().length, 1);
-    const depth = (root.height ?? 1) + 1;
+    // Inner ring = export leaves; outer ring = top-level folder/file roots.
+    const innerR = 120;
+    const outerR = size / 2 - 60;
 
-    const colWidth = Math.max(28, Math.min(80, 1400 / leafCount));
-    const rowHeight = 90;
+    // Hierarchies for each top-level tree, with leaves counted to allocate
+    // angular width proportional to leaf count.
+    const hierarchies = trees.map((t) => d3.hierarchy<RawNode>(t, (d) => d.children));
+    const leafCounts = hierarchies.map((h) => Math.max(1, h.leaves().length));
+    const totalLeaves = leafCounts.reduce((a, b) => a + b, 0);
 
-    const marginTop = 240; // generous top space for tall reference arcs
-    const marginBottom = 40;
-    const marginLeft = 40;
-    const marginRight = 40;
+    // Small angular gap between adjacent top-level trees.
+    const gap = trees.length > 1 ? 0.012 : 0;
+    const totalGap = gap * trees.length;
+    const usable = Math.PI * 2 - totalGap;
 
-    const innerWidth = leafCount * colWidth;
-    const innerHeight = depth * rowHeight;
+    // Precompute angular spans per top-level tree.
+    const spans: Array<{ a0: number; a1: number }> = [];
+    let cursor = -Math.PI / 2; // start at top
+    for (let i = 0; i < hierarchies.length; i++) {
+      const span = (leafCounts[i] / totalLeaves) * usable;
+      spans.push({ a0: cursor, a1: cursor + span });
+      cursor += span + gap;
+    }
 
-    const layout = d3
-      .tree<RawNode>()
-      .size([innerWidth, innerHeight])
-      .separation((a, b) => (a.parent === b.parent ? 1 : 1.4));
+    // Place each tree using a tree layout in (angle, depth) space, then
+    // map (angle, depth) -> (x, y) on a polar grid where depth 0 sits on
+    // the OUTER ring and the deepest depth sits on the INNER ring.
+    type Placed = {
+      node: d3.HierarchyNode<RawNode>;
+      x: number;
+      y: number;
+      angle: number;
+      radius: number;
+      depth: number;
+      maxDepth: number;
+    };
+    const placed: Placed[] = [];
+    const idToPlaced = new Map<string, Placed>();
+    const allLinks: Array<{ s: Placed; t: Placed }> = [];
 
-    layout(root);
+    hierarchies.forEach((h, i) => {
+      const { a0, a1 } = spans[i];
+      const span = a1 - a0;
+      const maxDepth = Math.max(1, h.height);
 
-    // Flip y so root sits at the bottom
-    root.each((n) => {
-      n.y = innerHeight - n.y!;
+      // d3.tree with size [angularSpan, 1] gives x in [0..span], y in [0..1].
+      const layout = d3
+        .tree<RawNode>()
+        .size([span, 1])
+        .separation((a, b) => (a.parent === b.parent ? 1 : 1.3));
+      layout(h);
+
+      h.each((n) => {
+        const angle = a0 + (n.x ?? 0);
+        // depth normalized 0..1 (0 = root, 1 = deepest)
+        const depthFrac = (n.depth ?? 0) / maxDepth;
+        // Map: root (depth 0) -> outerR; deepest -> innerR.
+        const radius = outerR - depthFrac * (outerR - innerR);
+        const px = cx + radius * Math.cos(angle);
+        const py = cy + radius * Math.sin(angle);
+        const p: Placed = {
+          node: n,
+          x: px,
+          y: py,
+          angle,
+          radius,
+          depth: n.depth ?? 0,
+          maxDepth,
+        };
+        placed.push(p);
+        idToPlaced.set(n.data.id, p);
+      });
+
+      // Containment links
+      h.links().forEach((l) => {
+        const s = idToPlaced.get(l.source.data.id);
+        const t = idToPlaced.get(l.target.data.id);
+        if (s && t) allLinks.push({ s, t });
+      });
     });
-
-    const width = innerWidth + marginLeft + marginRight;
-    const height = innerHeight + marginTop + marginBottom;
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
     svg
-      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("viewBox", `0 0 ${size} ${size}`)
       .attr("preserveAspectRatio", "xMidYMid meet");
 
-    const container = svg
-      .append("g")
-      .attr("transform", `translate(${marginLeft}, ${marginTop})`);
+    const container = svg.append("g");
 
     const zoomBehavior = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8])
-      .on("zoom", (event) => {
-        container.attr(
-          "transform",
-          `translate(${marginLeft + event.transform.x}, ${marginTop + event.transform.y}) scale(${event.transform.k})`,
-        );
-      });
+      .scaleExtent([0.3, 8])
+      .on("zoom", (event) => container.attr("transform", event.transform.toString()));
     svg.call(zoomBehavior);
 
-    // ---------- Tree links (containment) ----------
-    const linkGen = d3
-      .linkVertical<d3.HierarchyPointLink<RawNode>, d3.HierarchyPointNode<RawNode>>()
-      .x((d) => d.x!)
-      .y((d) => d.y!);
+    // ---------- Tree containment links (radial smooth curve) ----------
+    // Use a smooth radial path from parent (further out) to child (further in).
+    function linkPath(s: Placed, t: Placed): string {
+      // Cubic with control points along the radial direction of each endpoint.
+      const sLift = (s.radius - t.radius) * 0.5;
+      const tLift = (s.radius - t.radius) * 0.5;
+      const c1r = s.radius - sLift;
+      const c2r = t.radius + tLift;
+      const c1x = cx + c1r * Math.cos(s.angle);
+      const c1y = cy + c1r * Math.sin(s.angle);
+      const c2x = cx + c2r * Math.cos(t.angle);
+      const c2y = cy + c2r * Math.sin(t.angle);
+      return `M${s.x},${s.y} C${c1x},${c1y} ${c2x},${c2y} ${t.x},${t.y}`;
+    }
 
     container
       .append("g")
@@ -150,94 +202,29 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("stroke", "var(--color-border)")
       .attr("stroke-width", 1)
       .selectAll("path")
-      .data(root.links())
+      .data(allLinks)
       .join("path")
-      .attr("d", linkGen as never);
+      .attr("d", (l) => linkPath(l.s, l.t));
 
-    // ---------- Tree nodes ----------
-    const colorFor = (k: RawNode["kind"]) =>
-      k === "root"
-        ? "var(--color-primary)"
-        : k === "folder"
-          ? "var(--color-chart-1)"
-          : k === "file"
-            ? "var(--color-chart-2)"
-            : "var(--color-chart-4)";
-
-    const radiusFor = (k: RawNode["kind"]) =>
-      k === "root" ? 5 : k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
-
-    const node = container
-      .append("g")
-      .selectAll("g")
-      .data(root.descendants())
-      .join("g")
-      .attr("transform", (d) => `translate(${d.x},${d.y})`);
-
-    node
-      .append("circle")
-      .attr("r", (d) => radiusFor(d.data.kind))
-      .attr("fill", (d) => colorFor(d.data.kind))
-      .attr("stroke", "var(--color-background)")
-      .attr("stroke-width", 1);
-
-    node.append("title").text((d) => `${d.data.kind}: ${d.data.name}`);
-
-    // Labels: exports above the node (rotated for density), folders/files below
-    node
-      .filter((d) => d.data.kind === "export")
-      .append("text")
-      .attr("transform", "rotate(-60)")
-      .attr("dx", 6)
-      .attr("dy", "0.32em")
-      .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", 7)
-      .attr("fill", "var(--color-foreground)")
-      .text((d) => d.data.name);
-
-    node
-      .filter((d) => d.data.kind === "file" || d.data.kind === "folder" || d.data.kind === "root")
-      .append("text")
-      .attr("dy", "1.6em")
-      .attr("text-anchor", "middle")
-      .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", (d) => (d.data.kind === "folder" || d.data.kind === "root" ? 9 : 8))
-      .attr("fill", "var(--color-foreground)")
-      .text((d) => d.data.name);
-
-    // ---------- Reference bezier curves between export nodes ----------
-    const idToPoint = new Map<string, { x: number; y: number }>();
-    root.each((n) => {
-      if (n.data.kind === "export") idToPoint.set(n.data.id, { x: n.x!, y: n.y! });
-    });
-
-    type RefPair = { sx: number; sy: number; tx: number; ty: number };
+    // ---------- Reference chords through center ----------
+    type RefPair = { s: Placed; t: Placed };
     const refPairs: RefPair[] = [];
     for (const [exportId, refs] of refsByExport) {
-      const sp = idToPoint.get(exportId);
+      const sp = idToPlaced.get(exportId);
       if (!sp) continue;
       for (const refLabel of refs) {
         const targetId = labelToId.get(refLabel);
         if (!targetId) continue;
-        const tp = idToPoint.get(targetId);
+        const tp = idToPlaced.get(targetId);
         if (!tp) continue;
         if (targetId === exportId) continue;
-        refPairs.push({ sx: sp.x, sy: sp.y, tx: tp.x, ty: tp.y });
+        refPairs.push({ s: sp, t: tp });
       }
     }
 
-    // Bezier path: each end shoots straight upward, then sweeps over to the other side.
-    // Control points sit directly above each endpoint (no horizontal pull) so the
-    // tangent at the start/end is vertical — giving a natural fountain-like arch.
-    function bezierPath(p: RefPair): string {
-      const dx = p.tx - p.sx;
-      const dist = Math.abs(dx);
-      const lift = Math.min(marginTop * 0.95, 80 + dist * 0.9);
-      const c1x = p.sx;
-      const c1y = p.sy - lift;
-      const c2x = p.tx;
-      const c2y = p.ty - lift;
-      return `M${p.sx},${p.sy} C${c1x},${c1y} ${c2x},${c2y} ${p.tx},${p.ty}`;
+    function refPath(p: RefPair): string {
+      // Cubic with both controls at the center -> smooth chord.
+      return `M${p.s.x},${p.s.y} C${cx},${cy} ${cx},${cy} ${p.t.x},${p.t.y}`;
     }
 
     svg
@@ -258,13 +245,88 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-chart-3)")
-      .attr("stroke-opacity", 0.45)
-      .attr("stroke-width", 0.8)
+      .attr("stroke-opacity", 0.4)
+      .attr("stroke-width", 0.7)
       .selectAll("path")
       .data(refPairs)
       .join("path")
-      .attr("d", (d) => bezierPath(d))
+      .attr("d", refPath)
       .attr("marker-end", "url(#arrow-ref-stg)");
+
+    // ---------- Nodes ----------
+    const colorFor = (k: RawNode["kind"]) =>
+      k === "folder"
+        ? "var(--color-chart-1)"
+        : k === "file"
+          ? "var(--color-chart-2)"
+          : "var(--color-chart-4)";
+
+    const radiusFor = (k: RawNode["kind"]) =>
+      k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
+
+    const node = container
+      .append("g")
+      .selectAll("g")
+      .data(placed)
+      .join("g")
+      .attr("transform", (d) => `translate(${d.x},${d.y})`);
+
+    node
+      .append("circle")
+      .attr("r", (d) => radiusFor(d.node.data.kind))
+      .attr("fill", (d) => colorFor(d.node.data.kind))
+      .attr("stroke", "var(--color-background)")
+      .attr("stroke-width", 1);
+
+    node
+      .append("title")
+      .text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
+
+    // Labels: outward for outer (folders/files) and inward-radial for exports.
+    node
+      .filter((d) => d.node.data.kind === "export")
+      .append("text")
+      .attr("transform", (d) => {
+        const deg = (d.angle * 180) / Math.PI;
+        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
+        return flip ? `rotate(${deg + 180})` : `rotate(${deg})`;
+      })
+      .attr("text-anchor", (d) => {
+        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
+        return flip ? "end" : "start";
+      })
+      .attr("dx", (d) => {
+        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
+        return flip ? -5 : 5;
+      })
+      .attr("dy", "0.32em")
+      .attr("font-family", "ui-monospace, monospace")
+      .attr("font-size", 7)
+      .attr("fill", "var(--color-foreground)")
+      .text((d) => d.node.data.name);
+
+    // For folders/files (outer side): place label radially outward.
+    node
+      .filter((d) => d.node.data.kind !== "export")
+      .append("text")
+      .attr("transform", (d) => {
+        const deg = (d.angle * 180) / Math.PI;
+        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
+        return flip ? `rotate(${deg + 180})` : `rotate(${deg})`;
+      })
+      .attr("text-anchor", (d) => {
+        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
+        return flip ? "start" : "end";
+      })
+      .attr("dx", (d) => {
+        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
+        return flip ? 6 : -6;
+      })
+      .attr("dy", "0.32em")
+      .attr("font-family", "ui-monospace, monospace")
+      .attr("font-size", (d) => (d.node.data.kind === "folder" ? 9 : 8))
+      .attr("fill", "var(--color-foreground)")
+      .text((d) => d.node.data.name);
 
     return () => {
       svg.on(".zoom", null);
@@ -280,8 +342,8 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
   return (
     <div className="rounded-md border border-border bg-muted">
-      <div className="max-h-[70vh] overflow-auto">
-        <svg ref={ref} className="w-full" style={{ minHeight: "60vh" }} />
+      <div className="max-h-[80vh] overflow-hidden">
+        <svg ref={ref} className="w-full" style={{ height: "75vh" }} />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
@@ -315,7 +377,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span>
           {exportCount} exports · {refCount} references
         </span>
-        <span className="ml-auto">scroll to pan • pinch/scroll to zoom</span>
+        <span className="ml-auto">scroll to zoom</span>
       </div>
     </div>
   );
