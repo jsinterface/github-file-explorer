@@ -686,9 +686,16 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-foreground)" }}
+            style={{ background: "var(--color-chart-3)" }}
           />
-          symbol
+          function
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-2.5 w-2.5 rounded-full"
+            style={{ background: "var(--color-chart-4)" }}
+          />
+          value
         </span>
         <span className="flex items-center gap-1.5">
           <span
