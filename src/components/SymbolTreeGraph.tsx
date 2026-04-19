@@ -314,17 +314,29 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "var(--color-chart-3)");
 
-    container
+    const refSel = container
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-chart-3)")
-      .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 0.7)
-      .selectAll("path")
+      .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
       .join("path")
       .attr("d", refPath)
+      .attr("stroke-opacity", 0.4)
       .attr("marker-end", "url(#arrow-ref-stg)");
+
+    // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
+    const outgoingByExport = new Map<string, Set<string>>();
+    const incomingByExport = new Map<string, Set<string>>();
+    refPairs.forEach((p) => {
+      const s = p.s.node.data.id;
+      const t = p.t.node.data.id;
+      if (!outgoingByExport.has(s)) outgoingByExport.set(s, new Set());
+      outgoingByExport.get(s)!.add(t);
+      if (!incomingByExport.has(t)) incomingByExport.set(t, new Set());
+      incomingByExport.get(t)!.add(s);
+    });
 
     // ---------- Nodes ----------
     const colorFor = (k: RawNode["kind"]) =>
@@ -411,29 +423,50 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .data(placed.filter((p) => p.node.data.kind !== "folder"))
       .join("g")
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
-      .style("cursor", "pointer")
-      .on("mouseenter", (_e, d) => {
-        const anc = leafAncestors.get(d.node.data.id);
-        if (!anc) return;
-        linkSel
-          .attr("stroke", (l) =>
-            anc.links.has(linkKey(l.s.node.data.id, l.t.node.data.id))
-              ? "var(--color-chart-4)"
-              : "var(--color-border)",
-          )
-          .attr("stroke-width", (l) =>
-            anc.links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? 2 : 1,
-          );
-        folderArcSel
-          .attr("stroke", (a) =>
-            anc.folders.has(a.id) ? "var(--color-chart-4)" : "var(--color-chart-1)",
-          )
-          .attr("stroke-width", (a) => (anc.folders.has(a.id) ? 4 : 2.5));
-      })
-      .on("mouseleave", () => {
-        linkSel.attr("stroke", "var(--color-border)").attr("stroke-width", 1);
-        folderArcSel.attr("stroke", "var(--color-chart-1)").attr("stroke-width", 2.5);
+      .style("cursor", "pointer");
+
+    const DIM = 0.12;
+    const FULL = 1;
+
+    function applyHighlight(d: Placed) {
+      const anc = leafAncestors.get(d.node.data.id);
+      if (!anc) return;
+      const id = d.node.data.id;
+      // Collect related export ids (outgoing + incoming refs).
+      const relatedExports = new Set<string>([id]);
+      outgoingByExport.get(id)?.forEach((x) => relatedExports.add(x));
+      incomingByExport.get(id)?.forEach((x) => relatedExports.add(x));
+
+      // Union ancestor folders/links across self + related exports.
+      const folders = new Set(anc.folders);
+      const links = new Set(anc.links);
+      relatedExports.forEach((rid) => {
+        const a = leafAncestors.get(rid);
+        if (!a) return;
+        a.folders.forEach((f) => folders.add(f));
+        a.links.forEach((l) => links.add(l));
       });
+
+      linkSel.attr("stroke-opacity", (l) =>
+        links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? FULL : DIM,
+      );
+      folderArcSel.attr("stroke-opacity", (a) => (folders.has(a.id) ? FULL : DIM));
+      refSel.attr("stroke-opacity", (p) => {
+        const sId = p.s.node.data.id;
+        const tId = p.t.node.data.id;
+        return sId === id || tId === id ? FULL : DIM;
+      });
+      node.style("opacity", (n) => (relatedExports.has(n.node.data.id) || n.node.data.id === id ? FULL : DIM));
+    }
+
+    function clearHighlight() {
+      linkSel.attr("stroke-opacity", FULL);
+      folderArcSel.attr("stroke-opacity", FULL);
+      refSel.attr("stroke-opacity", 0.4);
+      node.style("opacity", FULL);
+    }
+
+    node.on("mouseenter", (_e, d) => applyHighlight(d)).on("mouseleave", clearHighlight);
 
     node
       .append("circle")
