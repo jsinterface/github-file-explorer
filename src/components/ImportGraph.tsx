@@ -40,7 +40,7 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
       .append("marker")
       .attr("id", "arrow")
       .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 20)
+      .attr("refX", 40)
       .attr("refY", 0)
       .attr("markerWidth", 6)
       .attr("markerHeight", 6)
