@@ -168,7 +168,15 @@ export function SymbolTreeGraph({
         // Animate the step pointer through call sites.
         if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
         const total = trace.callSites.length;
-        setRun({ filePath, trace, step: total > 0 ? 0 : -1, result, sourceExportId: exportId, edgeOrder });
+        setRun({
+          filePath,
+          trace,
+          step: total > 0 ? 0 : -1,
+          result,
+          sourceExportId: exportId,
+          edgeOrder,
+          completed: total === 0,
+        });
         if (total > 1) {
           let i = 0;
           stepTimerRef.current = window.setInterval(() => {
@@ -176,10 +184,16 @@ export function SymbolTreeGraph({
             if (i >= total) {
               if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
               stepTimerRef.current = null;
+              setRun((prev) => (prev ? { ...prev, completed: true } : prev));
               return;
             }
             setRun((prev) => (prev ? { ...prev, step: i } : prev));
-          }, 700);
+          }, 1500);
+        } else if (total === 1) {
+          // Single step: mark completed after one traversal duration
+          window.setTimeout(() => {
+            setRun((prev) => (prev ? { ...prev, completed: true } : prev));
+          }, 1500);
         }
       } catch (e) {
         setRun({
@@ -189,6 +203,7 @@ export function SymbolTreeGraph({
           result: { ok: false, error: e instanceof Error ? e.message : String(e) },
           sourceExportId: exportId,
           edgeOrder: [],
+          completed: true,
         });
       }
     },
