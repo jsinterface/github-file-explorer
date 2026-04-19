@@ -467,18 +467,26 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? FULL : DIM,
       );
       folderArcSel.attr("stroke-opacity", (a) => (folders.has(a.id) ? FULL : DIM));
-      refSel.attr("stroke-opacity", (p) => {
-        const sId = p.s.node.data.id;
-        const tId = p.t.node.data.id;
-        return relatedExports.has(sId) || relatedExports.has(tId) ? FULL : DIM;
-      });
+      refSel
+        .attr("stroke-opacity", (p) => {
+          const sId = p.s.node.data.id;
+          const tId = p.t.node.data.id;
+          return relatedExports.has(sId) || relatedExports.has(tId) ? FULL : DIM;
+        })
+        .attr("marker-end", (p) => {
+          const sId = p.s.node.data.id;
+          const tId = p.t.node.data.id;
+          return relatedExports.has(sId) || relatedExports.has(tId) 
+            ? "url(#arrow-ref-full)" 
+            : "url(#arrow-ref-dim)";
+        });
       node.style("opacity", (n) => (relatedExports.has(n.node.data.id) || n.node.data.id === id ? FULL : DIM));
     }
 
     function clearHighlight() {
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
-      refSel.attr("stroke-opacity", 0.4);
+      refSel.attr("stroke-opacity", 0.4).attr("marker-end", "url(#arrow-ref-full)");
       node.style("opacity", FULL);
     }
 
