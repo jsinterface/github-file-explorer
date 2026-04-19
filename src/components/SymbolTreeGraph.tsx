@@ -369,7 +369,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-chart-3)");
+      .attr("fill", "#ffff00");
     
     // Arrow marker for dimmed opacity
     defs
@@ -383,7 +383,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-chart-3)")
+      .attr("fill", "#ffff00")
       .attr("fill-opacity", 0.04);
 
     // Arrow marker for incoming highlighted edges (inverse color).
@@ -398,12 +398,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-chart-5)");
+      .attr("fill", "#536dfe");
 
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-chart-3)")
+      .attr("stroke", "#ffff00")
       .attr("stroke-width", 0.7)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
@@ -562,10 +562,10 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .attr("stroke", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          // Outgoing from a target -> default color; incoming to a target -> inverse color.
-          if (targetIds.has(sId)) return "var(--color-chart-3)";
-          if (targetIds.has(tId)) return "var(--color-chart-5)";
-          return "var(--color-chart-3)";
+          // Outgoing from a target = referenced edge; incoming to a target = referencing edge.
+          if (targetIds.has(sId)) return "#ffff00";
+          if (targetIds.has(tId)) return "#536dfe";
+          return "#ffff00";
         })
         .attr("stroke-opacity", (p) => {
           const sId = p.s.node.data.id;
@@ -589,7 +589,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
-        .attr("stroke", "var(--color-chart-3)")
+        .attr("stroke", "#ffff00")
         .attr("stroke-opacity", 0.4)
         .attr("marker-end", "url(#arrow-ref-full)");
       node.style("opacity", FULL);
@@ -700,7 +700,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-0.5"
-            style={{ background: "var(--color-chart-3)" }}
+            style={{ background: "#ffff00" }}
           />
           reference
         </span>
