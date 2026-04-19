@@ -425,10 +425,13 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
+    // Distinct colors per export kind: functions vs values.
+    const FUNCTION_COLOR = "var(--color-chart-3)";
+    const VALUE_COLOR = "var(--color-chart-4)";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-chart-2)";
-      return "var(--color-foreground)";
+      return n.exportKind === "function" ? FUNCTION_COLOR : VALUE_COLOR;
     };
 
     const radiusFor = (n: RawNode) => {
