@@ -879,7 +879,7 @@ export function SymbolTreeGraph({
           style={{ pointerEvents: "none" }}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+      <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap items-center gap-3 rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
           folder
@@ -904,9 +904,8 @@ export function SymbolTreeGraph({
           reference
         </span>
         <span>
-          {exportCount} exports · {refCount} references
+          {exportCount} exports · {refCount} refs
         </span>
-        <span className="ml-auto">{repo ? "click a function to trace" : "scroll to zoom"}</span>
       </div>
     </div>
   );
