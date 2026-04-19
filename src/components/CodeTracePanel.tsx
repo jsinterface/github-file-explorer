@@ -56,24 +56,10 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
   }, [step, html]);
 
   const [resultOpen, setResultOpen] = useState(true);
-  const [faded, setFaded] = useState(false);
-
-  // Auto-fade after the animation completes (last step reached).
-  useEffect(() => {
-    setFaded(false);
-    const total = trace.callSites.length;
-    if (total === 0 || step >= total - 1) {
-      const t = window.setTimeout(() => setFaded(true), 1500);
-      return () => window.clearTimeout(t);
-    }
-  }, [step, trace.callSites.length]);
 
   return (
-    <div
-      className={`pointer-events-auto absolute inset-0 z-0 flex flex-col rounded-md bg-background/30 backdrop-blur-sm transition-opacity duration-700 ${
-        faded ? "opacity-10 hover:opacity-100" : "opacity-100"
-      }`}
-    >
+    <div className="pointer-events-auto absolute inset-0 z-0 flex flex-col rounded-md bg-background/30 backdrop-blur-sm">
+
       <style>{`
         .ref-token { background: color-mix(in oklab, var(--color-accent) 30%, transparent); border-radius: 2px; padding: 0 1px; transition: all 0.25s; }
         .ref-visited { background: color-mix(in oklab, #536dfe 25%, transparent); }
