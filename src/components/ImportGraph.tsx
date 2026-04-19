@@ -34,21 +34,6 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
       .on("zoom", (event) => container.attr("transform", event.transform.toString()));
     svg.call(zoomBehavior);
 
-    // Arrow marker
-    svg
-      .append("defs")
-      .append("marker")
-      .attr("id", "arrow")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 100)
-      .attr("refY", 0)
-      .attr("markerWidth", 6)
-      .attr("markerHeight", 6)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-border)");
-
     const link = container
       .append("g")
       .attr("stroke", "var(--color-border)")
@@ -56,8 +41,7 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
       .selectAll("line")
       .data(links)
       .join("line")
-      .attr("stroke-width", 1)
-      .attr("marker-end", "url(#arrow)");
+      .attr("stroke-width", 1);
 
     const node = container
       .append("g")

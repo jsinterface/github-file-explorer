@@ -563,76 +563,6 @@ export function SymbolTreeGraph({
       return `M${p.s.x},${p.s.y} C${cx},${cy} ${cx},${cy} ${p.t.x},${p.t.y}`;
     }
 
-    const defs = svg.append("defs");
-
-    // Arrow marker for full opacity (highlighted)
-    defs
-      .append("marker")
-      .attr("id", "arrow-ref-full")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 8)
-      .attr("refY", 0)
-      .attr("markerWidth", 5)
-      .attr("markerHeight", 5)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#5c6bc0");
-
-    // Arrow marker for dimmed opacity
-    defs
-      .append("marker")
-      .attr("id", "arrow-ref-dim")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 8)
-      .attr("refY", 0)
-      .attr("markerWidth", 5)
-      .attr("markerHeight", 5)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-muted-foreground)")
-      .attr("fill-opacity", 0.6);
-
-    // Arrow marker for default (no hover) reference edges, matches file edge color.
-    defs
-      .append("marker")
-      .attr("id", "arrow-ref-default")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 8)
-      .attr("refY", 0)
-      .attr("markerWidth", 5)
-      .attr("markerHeight", 5)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-muted-foreground)");
-
-    // Arrow marker for incoming highlighted edges (inverse color).
-    defs
-      .append("marker")
-      .attr("id", "arrow-ref-in")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 8)
-      .attr("refY", 0)
-      .attr("markerWidth", 5)
-      .attr("markerHeight", 5)
-      .attr("orient", "auto")
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#536dfe");
-
-    // White glow filter applied to a node label on hover.
-    const glow = defs.append("filter").attr("id", "label-glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-    glow.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 2.5).attr("result", "blur1");
-    glow.append("feFlood").attr("flood-color", "#ffffff").attr("flood-opacity", 1).attr("result", "white");
-    glow.append("feComposite").attr("in", "white").attr("in2", "blur1").attr("operator", "in").attr("result", "glow1");
-    const merge = glow.append("feMerge");
-    merge.append("feMergeNode").attr("in", "glow1");
-    merge.append("feMergeNode").attr("in", "glow1");
-    merge.append("feMergeNode").attr("in", "glow1");
-    merge.append("feMergeNode").attr("in", "SourceGraphic");
-
     const refSel = container
       .append("g")
       .attr("fill", "none")
@@ -644,8 +574,7 @@ export function SymbolTreeGraph({
       .attr("d", refPath)
       .attr("stroke-opacity", 1)
       .attr("data-src", (p) => p.s.node.data.id)
-      .attr("data-tgt", (p) => p.t.node.data.id)
-      .attr("marker-end", "url(#arrow-ref-default)");
+      .attr("data-tgt", (p) => p.t.node.data.id);
 
     // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
     const outgoingByExport = new Map<string, Set<string>>();
@@ -824,13 +753,6 @@ export function SymbolTreeGraph({
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
           return targetIds.has(sId) || targetIds.has(tId) ? FULL : DIM;
-        })
-        .attr("marker-end", (p) => {
-          const sId = p.s.node.data.id;
-          const tId = p.t.node.data.id;
-          if (targetIds.has(sId)) return "url(#arrow-ref-full)";
-          if (targetIds.has(tId)) return "url(#arrow-ref-in)";
-          return "url(#arrow-ref-dim)";
         });
       node.style("opacity", (n) => {
         const nid = n.node.data.id;
@@ -843,8 +765,7 @@ export function SymbolTreeGraph({
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
         .attr("stroke", "#555555")
-        .attr("stroke-opacity", 1)
-        .attr("marker-end", "url(#arrow-ref-default)");
+        .attr("stroke-opacity", 1);
       node.style("opacity", FULL);
     }
 
