@@ -882,12 +882,12 @@ export function SymbolTreeGraph({
       })
       .on("mouseleave", clearHighlight);
 
-    // node
-    //   .append("circle")
-    //   .attr("r", (d) => radiusFor(d.node.data))
-    //   .attr("fill", (d) => colorFor(d.node.data));
+    node
+      .append("circle")
+      .attr("r", (d) => radiusFor(d.node.data))
+      .attr("fill", (d) => colorFor(d.node.data));
 
-    // node.append("title").text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
+    node.append("title").text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
 
     // Scale labels by ring distance: center = 0em, outer ring = 1em.
     const nodeFontSizeFor = (r: number) => `${r / outerR}em`;
