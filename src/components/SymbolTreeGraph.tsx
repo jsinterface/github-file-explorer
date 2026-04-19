@@ -889,8 +889,9 @@ export function SymbolTreeGraph({
       }
     });
 
-    // Spawn the green traveler on the active path
-    if (activePath) {
+    // Spawn the green traveler on the active path — one full traversal per step.
+    // Stops when the function execution completes.
+    if (activePath && !run.completed) {
       const path = activePath as SVGPathElement;
       const totalLen = path.getTotalLength();
       const ns = "http://www.w3.org/2000/svg";
@@ -902,18 +903,20 @@ export function SymbolTreeGraph({
       traveler.setAttribute("stroke-width", "0.5");
       traveler.style.filter = "drop-shadow(0 0 6px #22ff88) drop-shadow(0 0 12px #22ff88)";
       traveler.style.pointerEvents = "none";
-      // Append to the SVG so it sits in the same coord space as the paths.
-      // Paths live inside the zoom container, so append to the path's parent <g>.
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1400; // steady, slow travel
+      const duration = 1400; // matches step interval; one full pass per step
       const start = performance.now();
       const tick = (now: number) => {
-        const t = ((now - start) % duration) / duration;
+        const t = Math.min(1, (now - start) / duration);
         const pt = path.getPointAtLength(t * totalLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
-        travelerRafRef.current = requestAnimationFrame(tick);
+        if (t < 1) {
+          travelerRafRef.current = requestAnimationFrame(tick);
+        } else {
+          travelerRafRef.current = null;
+        }
       };
       travelerRafRef.current = requestAnimationFrame(tick);
     }
