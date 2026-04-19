@@ -108,62 +108,69 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
 
     node.append("title").text((d) => `${d.label} · in:${indegree.get(d.id) ?? 0}`);
 
-    // Wrap a label into lines that fit inside a circle of given radius.
-    // Uses a rough char-width estimate and constrains lines so the stacked
-    // block of text fits within the inscribed square of the circle.
-    const CHAR_W = 0.6; // width factor relative to font-size for monospace
+    // Pick a font size and line wrapping such that the ENTIRE label fits
+    // inside the circle's inscribed square — no truncation, no ellipsis.
+    const CHAR_W = 0.6; // monospace char width factor relative to font-size
     const LINE_H = 1.1;
 
-    function wrapToCircle(text: string, radius: number): { lines: string[]; fontSize: number } {
-      // Pick a font size proportional to radius, clamped for legibility.
-      const fontSize = Math.max(5, Math.min(11, radius * 0.55));
-      // Inscribed square side ≈ radius * sqrt(2); leave small padding.
-      const maxWidth = Math.max(8, radius * 1.35);
-      const charsPerLine = Math.max(2, Math.floor(maxWidth / (fontSize * CHAR_W)));
-      const maxLines = Math.max(1, Math.floor((radius * 1.35) / (fontSize * LINE_H)));
-
-      // Tokenize on common identifier separators while keeping them as breakpoints.
+    // Wrap text into at most `maxLines` lines, each at most `maxChars` chars.
+    // Returns null if it cannot fit (a single token longer than maxChars and
+    // we're not allowed to hard-break — we always allow hard-break here, so
+    // it returns lines unless maxChars < 1).
+    function wrapText(text: string, maxChars: number, maxLines: number): string[] | null {
+      if (maxChars < 1) return null;
       const tokens = text.split(/([\/:_\-.])/).filter(Boolean);
       const lines: string[] = [];
       let current = "";
-      const pushCurrent = () => {
-        if (current) lines.push(current);
-        current = "";
+      const flush = () => {
+        if (current) {
+          lines.push(current);
+          current = "";
+        }
       };
-
       for (const tok of tokens) {
-        if ((current + tok).length <= charsPerLine) {
-          current += tok;
-        } else {
-          if (current) pushCurrent();
-          // Hard-break tokens that exceed a single line
-          let rest = tok;
-          while (rest.length > charsPerLine) {
-            lines.push(rest.slice(0, charsPerLine));
-            rest = rest.slice(charsPerLine);
+        let rest = tok;
+        // If token alone is too long, hard-break it across lines.
+        while (rest.length > maxChars) {
+          if (current.length + rest.length > maxChars) flush();
+          const take = maxChars - current.length;
+          if (take > 0) {
+            current += rest.slice(0, take);
+            rest = rest.slice(take);
           }
+          flush();
+          if (lines.length >= maxLines) return null;
+        }
+        if ((current + rest).length <= maxChars) {
+          current += rest;
+        } else {
+          flush();
+          if (lines.length >= maxLines) return null;
           current = rest;
         }
-        if (lines.length >= maxLines) break;
       }
-      if (lines.length < maxLines && current) pushCurrent();
+      flush();
+      if (lines.length > maxLines) return null;
+      return lines;
+    }
 
-      let out = lines.slice(0, maxLines);
-      if (out.length === 0) out = [text.slice(0, charsPerLine)];
-      // Mark truncation in the last line if we cut content
-      const usedChars = out.join("").length;
-      if (usedChars < text.replace(/[\/:_\-.]/g, "").length + (text.match(/[\/:_\-.]/g)?.length ?? 0)) {
-        const last = out[out.length - 1];
-        out[out.length - 1] =
-          last.length > charsPerLine - 1 ? last.slice(0, charsPerLine - 1) + "…" : last + "…";
+    function fitLabel(text: string, radius: number): { lines: string[]; fontSize: number } {
+      const usableSide = radius * 1.4; // inscribed square with padding
+      // Try font sizes from large to small and pick the largest that fits.
+      for (let fs = 14; fs >= 2; fs -= 0.5) {
+        const maxChars = Math.max(1, Math.floor(usableSide / (fs * CHAR_W)));
+        const maxLines = Math.max(1, Math.floor(usableSide / (fs * LINE_H)));
+        const lines = wrapText(text, maxChars, maxLines);
+        if (lines) return { lines, fontSize: fs };
       }
-      return { lines: out, fontSize };
+      // Fallback: render at minimum size on a single line (very small radii).
+      return { lines: [text], fontSize: 2 };
     }
 
     const labelGroup = node.append("g").attr("text-anchor", "middle");
     labelGroup.each(function (d) {
       const r = radiusFor(d.id, d.kind);
-      const { lines, fontSize } = wrapToCircle(d.label, r);
+      const { lines, fontSize } = fitLabel(d.label, r);
       const totalH = (lines.length - 1) * fontSize * LINE_H;
       const startY = -totalH / 2;
       const sel = d3.select(this);
