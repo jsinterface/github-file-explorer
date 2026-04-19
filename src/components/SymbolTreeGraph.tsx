@@ -398,7 +398,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-chart-5)");
+      .attr("fill", "#536dfe");
 
     const refSel = container
       .append("g")
