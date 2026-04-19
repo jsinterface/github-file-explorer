@@ -1088,17 +1088,57 @@ export function SymbolTreeGraph({
           />
         )}
         {stack.length > 0 && (
-          <div className="pointer-events-none fixed bottom-24 left-4 z-30 flex max-w-sm flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+          <div className="pointer-events-none fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
             {stack.map((f, i) => {
               const total = Math.max(1, f.edgeOrder.length);
               const done = f.direction === "returning" ? f.step + 1 : f.step;
               const pct = Math.max(0, Math.min(100, (done / total) * 100));
+
+              // For non-root frames, copy the exact call expression text from the parent's source.
+              let callLabel = `${f.trace.exportName}()`;
+              if (i > 0) {
+                const parent = stack[i - 1];
+                const cs = parent.trace.callSites[parent.step];
+                const src = parent.trace.source;
+                if (cs && src) {
+                  // Extend from identifier end through the matching parenthesized argument list.
+                  let j = cs.end;
+                  while (j < src.length && /\s/.test(src[j])) j++;
+                  if (src[j] === "(") {
+                    let depth = 0;
+                    let inStr: string | null = null;
+                    let esc = false;
+                    let end = j;
+                    for (let k = j; k < src.length; k++) {
+                      const c = src[k];
+                      if (inStr) {
+                        if (esc) esc = false;
+                        else if (c === "\\") esc = true;
+                        else if (c === inStr) inStr = null;
+                      } else if (c === '"' || c === "'" || c === "`") {
+                        inStr = c;
+                      } else if (c === "(") depth++;
+                      else if (c === ")") {
+                        depth--;
+                        if (depth === 0) {
+                          end = k + 1;
+                          break;
+                        }
+                      }
+                    }
+                    callLabel = src.slice(cs.start, end).replace(/\s+/g, " ").trim();
+                  } else {
+                    callLabel = src.slice(cs.start, cs.end);
+                  }
+                }
+              }
+
               return (
                 <div key={`${f.sourceExportId}-${i}`} className="flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-2 font-mono text-[10px]">
                     <span className="truncate text-muted-foreground">{f.filePath}</span>
-                    <span className="shrink-0 font-semibold text-foreground">
-                      {f.trace.exportName}()
+                    <span className="shrink-0 truncate font-semibold text-foreground" title={callLabel}>
+                      {callLabel}
                     </span>
                   </div>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
