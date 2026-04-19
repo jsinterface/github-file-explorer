@@ -361,12 +361,21 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
-    const colorFor = (k: RawNode["kind"]) =>
-      k === "folder"
-        ? "var(--color-chart-1)"
-        : k === "file"
-          ? "var(--color-chart-2)"
-          : "var(--color-chart-4)";
+    // Build indegree map for export nodes (number of incoming references).
+    const maxIndegree = Math.max(
+      1,
+      ...Array.from(incomingByExport.values()).map((s) => s.size),
+    );
+    const exportColorScale = d3
+      .scaleSequential<string>((t) => d3.interpolateViridis(0.15 + t * 0.8))
+      .domain([0, Math.log1p(maxIndegree)]);
+
+    const colorFor = (n: RawNode) => {
+      if (n.kind === "folder") return "var(--color-chart-1)";
+      if (n.kind === "file") return "var(--color-chart-2)";
+      const indeg = incomingByExport.get(n.id)?.size ?? 0;
+      return exportColorScale(Math.log1p(indeg));
+    };
 
     const radiusFor = (k: RawNode["kind"]) =>
       k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
