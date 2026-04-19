@@ -417,14 +417,14 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "#ffff00")
+      .attr("stroke", "var(--color-border)")
       .attr("stroke-width", 0.7)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
       .join("path")
       .attr("d", refPath)
-      .attr("stroke-opacity", 0.4)
-      .attr("marker-end", "url(#arrow-ref-full)");
+      .attr("stroke-opacity", 1)
+      .attr("marker-end", "url(#arrow-ref-default)");
 
     // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
     const outgoingByExport = new Map<string, Set<string>>();
