@@ -974,14 +974,19 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = BASE_STEP_MS / speedRef.current; // matches stepMs()
-      const start = performance.now();
+      // Track elapsed "scaled" progress so changing speed mid-animation re-rates smoothly.
+      // At speed s, progress per real ms = s / BASE_STEP_MS. Speed 0 → no progress (paused).
+      let progress = 0; // 0..1
+      let last = performance.now();
       const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const pt = animPath.getPointAtLength(t * animLen);
+        const dt = now - last;
+        last = now;
+        const s = speedRef.current;
+        if (s > 0) progress = Math.min(1, progress + (dt * s) / BASE_STEP_MS);
+        const pt = animPath.getPointAtLength(progress * animLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
-        if (t < 1) {
+        if (progress < 1) {
           travelerRafRef.current = requestAnimationFrame(tick);
         } else {
           travelerRafRef.current = null;
