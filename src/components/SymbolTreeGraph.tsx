@@ -846,6 +846,10 @@ export function SymbolTreeGraph({
     }
     // Remove any existing traveler node
     svg.querySelectorAll(".edge-traveler").forEach((n) => n.remove());
+    // Clear any prior label glow
+    svg.querySelectorAll<SVGTextElement>("g[data-node-id] text").forEach((t) => {
+      t.style.filter = "";
+    });
 
     if (!run) {
       paths.forEach((p) => {
