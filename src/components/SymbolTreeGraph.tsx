@@ -425,21 +425,10 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
-    // Two distinct hue ramps: functions (blue -> cyan) and values (orange -> yellow).
-    // Brightness within each ramp encodes log(indegree).
-    const fnScale = d3
-      .scaleSequential<string>((t) => d3.interpolateCool(0.15 + t * 0.7))
-      .domain([0, Math.log1p(maxIndeg)]);
-    const valScale = d3
-      .scaleSequential<string>((t) => d3.interpolateWarm(0.15 + t * 0.7))
-      .domain([0, Math.log1p(maxIndeg)]);
-
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-chart-2)";
-      const indeg = indegByExport.get(n.id) ?? 0;
-      const t = Math.log1p(indeg);
-      return n.exportKind === "function" ? fnScale(t) : valScale(t);
+      return "var(--color-foreground)";
     };
 
     const radiusFor = (n: RawNode) => {
