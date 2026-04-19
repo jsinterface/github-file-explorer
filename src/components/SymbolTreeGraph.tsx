@@ -917,8 +917,17 @@ export function SymbolTreeGraph({
         <span>
           {exportCount} exports · {refCount} references
         </span>
-        <span className="ml-auto">scroll to zoom</span>
+        <span className="ml-auto">{repo ? "click a function to trace" : "scroll to zoom"}</span>
       </div>
+      {run && (
+        <CodeTracePanel
+          trace={run.trace}
+          filePath={run.filePath}
+          step={run.step}
+          result={run.result}
+          onClose={() => setRun(null)}
+        />
+      )}
     </div>
   );
 }
