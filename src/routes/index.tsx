@@ -334,7 +334,7 @@ function Index() {
             disabled={loading}
           />
           <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
-            <SelectTrigger className="w-[160px] rounded-full border-0 bg-muted/60 shadow-none focus:ring-0">
+            <SelectTrigger className="w-[160px] rounded-full border-0 bg-transparent shadow-none focus:ring-0">
               <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent>
@@ -348,14 +348,18 @@ function Index() {
             </SelectContent>
           </Select>
           {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
-            <Input
-              id="input-json"
-              value={inputJson}
-              onChange={(e) => setInputJson(e.target.value)}
-              spellCheck={false}
-              className="flex-1 rounded-full border-0 bg-muted/60 font-mono text-xs shadow-none focus-visible:ring-0"
-              placeholder='Input JSON: {"name": "world"}'
-            />
+            <div className="flex flex-1 items-center font-mono text-xs text-muted-foreground">
+              <span className="select-none pl-1 pr-0.5">(</span>
+              <Input
+                id="input-json"
+                value={inputJson}
+                onChange={(e) => setInputJson(e.target.value)}
+                spellCheck={false}
+                className="flex-1 rounded-none border-0 bg-transparent px-1 font-mono text-xs shadow-none focus-visible:ring-0"
+                placeholder='{"name": "world"}'
+              />
+              <span className="select-none pl-0.5 pr-1">)</span>
+            </div>
           )}
           {/* Hidden submit so Enter key triggers form submission */}
           <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
