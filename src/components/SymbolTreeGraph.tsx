@@ -533,7 +533,7 @@ export function SymbolTreeGraph({
     const linkSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-muted-foreground)")
+      .attr("stroke", "#555555")
       .attr("stroke-width", 1.8)
       .selectAll<SVGPathElement, { s: Placed; t: Placed }>("path")
       .data(allLinks)
@@ -634,7 +634,7 @@ export function SymbolTreeGraph({
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-muted-foreground)")
+      .attr("stroke", "#555555")
       .attr("stroke-width", 1.4)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
