@@ -1,22 +1,34 @@
 import { useEffect, useRef, useMemo } from "react";
 import * as d3 from "d3";
 
+export type SymbolLeaf = {
+  kind: "function" | "value";
+  refs: string[];
+};
 export type SymbolTreeNode =
   | { [key: string]: SymbolTreeNode }
-  | Record<string, string[]>;
+  | Record<string, SymbolLeaf>;
 
 type RawNode = {
   id: string;
   name: string;
   kind: "folder" | "file" | "export";
+  exportKind?: "function" | "value";
   children?: RawNode[];
 };
 
-function isExportLeaf(v: unknown): v is Record<string, string[]> {
+function isExportLeaf(v: unknown): v is Record<string, SymbolLeaf> {
   if (!v || typeof v !== "object") return false;
   const vals = Object.values(v as Record<string, unknown>);
   if (vals.length === 0) return false;
-  return vals.every((x) => Array.isArray(x));
+  return vals.every(
+    (x) =>
+      x !== null &&
+      typeof x === "object" &&
+      "kind" in (x as object) &&
+      "refs" in (x as object) &&
+      Array.isArray((x as { refs: unknown }).refs),
+  );
 }
 
 function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
@@ -45,15 +57,16 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
           children: [],
         };
         const shortFile = parts.slice(-2).join("/");
-        for (const [exportName, refs] of Object.entries(child)) {
+        for (const [exportName, leaf] of Object.entries(child)) {
           const exportId = `export:${path}#${exportName}`;
           fileNode.children!.push({
             id: exportId,
             name: exportName,
             kind: "export",
+            exportKind: leaf.kind,
           });
           labelToId.set(`${shortFile}:${exportName}`, exportId);
-          refsByExport.set(exportId, refs);
+          refsByExport.set(exportId, leaf.refs);
         }
         out.push(fileNode);
       } else {
@@ -412,15 +425,21 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
-    const exportColorScale = d3
-      .scaleSequential<string>((t) => d3.interpolateTurbo(0.1 + t * 0.85))
+    // Two distinct hue ramps: functions (blue -> cyan) and values (orange -> yellow).
+    // Brightness within each ramp encodes log(indegree).
+    const fnScale = d3
+      .scaleSequential<string>((t) => d3.interpolateCool(0.15 + t * 0.7))
+      .domain([0, Math.log1p(maxIndeg)]);
+    const valScale = d3
+      .scaleSequential<string>((t) => d3.interpolateWarm(0.15 + t * 0.7))
       .domain([0, Math.log1p(maxIndeg)]);
 
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-chart-2)";
       const indeg = indegByExport.get(n.id) ?? 0;
-      return exportColorScale(Math.log1p(indeg));
+      const t = Math.log1p(indeg);
+      return n.exportKind === "function" ? fnScale(t) : valScale(t);
     };
 
     const radiusFor = (n: RawNode) => {
@@ -675,9 +694,16 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-4)" }}
+            style={{ background: "rgb(72, 159, 230)" }}
           />
-          export
+          function
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-2.5 w-2.5 rounded-full"
+            style={{ background: "rgb(230, 130, 60)" }}
+          />
+          value
         </span>
         <span className="flex items-center gap-1.5">
           <span
