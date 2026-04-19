@@ -238,7 +238,7 @@ export function SymbolTreeGraph({
           return [...s.slice(0, -1), top];
         });
         // Wait for the forward traveler to arrive.
-        await sleep(STEP_MS);
+        await sleep(stepMs());
         if (token.cancelled) return;
 
         const targetId = frame.edgeOrder[i];
@@ -256,7 +256,7 @@ export function SymbolTreeGraph({
           const top = { ...s[s.length - 1], step: i, direction: "returning" as const };
           return [...s.slice(0, -1), top];
         });
-        await sleep(STEP_MS);
+        await sleep(stepMs());
         if (token.cancelled) return;
       }
 
