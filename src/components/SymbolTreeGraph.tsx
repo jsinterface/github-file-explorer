@@ -113,7 +113,14 @@ export function SymbolTreeGraph({
   const [stack, setStack] = useState<Frame[]>([]);
   const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
 
-  const STEP_MS = 1500;
+  // Animation speed multiplier: higher = faster. 1 = base 1500ms per step.
+  const [speed, setSpeed] = useState(1);
+  const speedRef = useRef(speed);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+  const BASE_STEP_MS = 1500;
+  const stepMs = () => BASE_STEP_MS / speedRef.current;
   const sleep = (ms: number) =>
     new Promise<void>((resolve) => {
       window.setTimeout(resolve, ms);
@@ -231,7 +238,7 @@ export function SymbolTreeGraph({
           return [...s.slice(0, -1), top];
         });
         // Wait for the forward traveler to arrive.
-        await sleep(STEP_MS);
+        await sleep(stepMs());
         if (token.cancelled) return;
 
         const targetId = frame.edgeOrder[i];
@@ -249,7 +256,7 @@ export function SymbolTreeGraph({
           const top = { ...s[s.length - 1], step: i, direction: "returning" as const };
           return [...s.slice(0, -1), top];
         });
-        await sleep(STEP_MS);
+        await sleep(stepMs());
         if (token.cancelled) return;
       }
 
@@ -1040,7 +1047,7 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1500; // matches STEP_MS
+      const duration = BASE_STEP_MS / speedRef.current; // matches stepMs()
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
@@ -1088,7 +1095,23 @@ export function SymbolTreeGraph({
           />
         )}
         {stack.length > 0 && (
-          <div className="pointer-events-none fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+          <div className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+            {/* Speed dial — first child = bottom row in flex-col-reverse */}
+            <div className="flex items-center gap-2 font-mono text-[10px]">
+              <span className="text-muted-foreground">speed</span>
+              <input
+                type="range"
+                min={0.25}
+                max={4}
+                step={0.25}
+                value={speed}
+                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                className="h-1 flex-1 cursor-pointer accent-[#ffff00]"
+              />
+              <span className="w-8 shrink-0 text-right font-semibold text-foreground">
+                {speed.toFixed(2)}x
+              </span>
+            </div>
             {stack.map((f, i) => {
               const total = Math.max(1, f.edgeOrder.length);
               const done = f.direction === "returning" ? f.step + 1 : f.step;
