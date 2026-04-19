@@ -370,20 +370,30 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("stroke", "none")
       .attr("d", labelPathD);
 
+    // Dynamic font size based on ring distance from center
+    const fontSizeFor = (r: number) => {
+      const minR = innerR;
+      const maxR = outerR;
+      const minSize = 7;
+      const maxSize = 11;
+      const t = (r - minR) / (maxR - minR);
+      return minSize + t * (maxSize - minSize);
+    };
+
     container
       .append("g")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", 9)
+      .attr("font-size", (d: FolderArc) => fontSizeFor(d.radius))
       .attr("fill", "var(--color-chart-1)")
       .selectAll("text")
       .data(folderArcs)
       .join("text")
       .attr("dy", "0.32em")
       .append("textPath")
-      .attr("href", (d) => `#folder-arc-label-${safeId(d.id)}`)
+      .attr("href", (d: FolderArc) => `#folder-arc-label-${safeId(d.id)}`)
       .attr("startOffset", "50%")
       .attr("text-anchor", "middle")
-      .text((d) => d.name);
+      .text((d: FolderArc) => d.name);
 
     const node = container
       .append("g")
@@ -402,6 +412,16 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     node
       .append("title")
       .text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
+
+    // Dynamic font size based on ring distance from center
+    const nodeFontSizeFor = (r: number) => {
+      const minR = innerR;
+      const maxR = outerR;
+      const minSize = 7;
+      const maxSize = 10;
+      const t = (r - minR) / (maxR - minR);
+      return minSize + t * (maxSize - minSize);
+    };
 
     // All labels point radially outward (away from the chart center).
     node
@@ -422,7 +442,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       })
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", (d) => (d.node.data.kind === "folder" ? 9 : d.node.data.kind === "file" ? 8 : 7))
+      .attr("font-size", (d) => nodeFontSizeFor(d.radius))
       .attr("fill", "var(--color-foreground)")
       .text((d) => d.node.data.name);
 
