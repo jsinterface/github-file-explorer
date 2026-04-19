@@ -264,13 +264,15 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       const t0y = cy + r * Math.sin(c.ta0);
       const t1x = cx + r * Math.cos(c.ta1);
       const t1y = cy + r * Math.sin(c.ta1);
-      const sweepFlag = (c.sa1 - c.sa0) > Math.PI ? 1 : 0;
-      const tSweep = (c.ta1 - c.ta0) > Math.PI ? 1 : 0;
+      const sLargeArc = (c.sa1 - c.sa0) > Math.PI ? 1 : 0;
+      const tLargeArc = (c.ta1 - c.ta0) > Math.PI ? 1 : 0;
+      // Source arc: go forward (increasing angle) along the inner ring -> sweep 1
+      // Target arc: go backward (decreasing angle) to close the ribbon flush -> sweep 0
       return [
         `M${s0x},${s0y}`,
-        `A${r},${r} 0 ${sweepFlag} 1 ${s1x},${s1y}`,
+        `A${r},${r} 0 ${sLargeArc} 1 ${s1x},${s1y}`,
         `C${cx},${cy} ${cx},${cy} ${t1x},${t1y}`,
-        `A${r},${r} 0 ${tSweep} 1 ${t0x},${t0y}`,
+        `A${r},${r} 0 ${tLargeArc} 0 ${t0x},${t0y}`,
         `C${cx},${cy} ${cx},${cy} ${s0x},${s0y}`,
         "Z",
       ].join(" ");
