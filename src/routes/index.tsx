@@ -291,10 +291,7 @@ function Index() {
               </>
             )}
             {(view === "symbolTree" && symbolGraph) && (loading && progress || error || result) && (
-              <>
-                <span className="mx-1 h-3 w-px bg-border" />
-                <div className="basis-full" />
-              </>
+              <div className="basis-full h-0" />
             )}
             {loading && progress ? (
               <span>{progress}</span>
