@@ -103,6 +103,7 @@ export function SymbolTreeGraph({
     result: { ok: true; value: unknown } | { ok: false; error: string } | null;
     sourceExportId: string;
     edgeOrder: string[]; // ordered target export ids matching call sites
+    completed: boolean;
   };
   const [run, setRun] = useState<RunState | null>(null);
   const runRef = useRef<RunState | null>(null);
@@ -137,6 +138,7 @@ export function SymbolTreeGraph({
             result: { ok: false, error: "Could not locate export in source." },
             sourceExportId: exportId,
             edgeOrder: [],
+            completed: true,
           });
           return;
         }
@@ -166,7 +168,15 @@ export function SymbolTreeGraph({
         // Animate the step pointer through call sites.
         if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
         const total = trace.callSites.length;
-        setRun({ filePath, trace, step: total > 0 ? 0 : -1, result, sourceExportId: exportId, edgeOrder });
+        setRun({
+          filePath,
+          trace,
+          step: total > 0 ? 0 : -1,
+          result,
+          sourceExportId: exportId,
+          edgeOrder,
+          completed: total === 0,
+        });
         if (total > 1) {
           let i = 0;
           stepTimerRef.current = window.setInterval(() => {
@@ -174,10 +184,16 @@ export function SymbolTreeGraph({
             if (i >= total) {
               if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
               stepTimerRef.current = null;
+              setRun((prev) => (prev ? { ...prev, completed: true } : prev));
               return;
             }
             setRun((prev) => (prev ? { ...prev, step: i } : prev));
-          }, 700);
+          }, 1500);
+        } else if (total === 1) {
+          // Single step: mark completed after one traversal duration
+          window.setTimeout(() => {
+            setRun((prev) => (prev ? { ...prev, completed: true } : prev));
+          }, 1500);
         }
       } catch (e) {
         setRun({
@@ -187,6 +203,7 @@ export function SymbolTreeGraph({
           result: { ok: false, error: e instanceof Error ? e.message : String(e) },
           sourceExportId: exportId,
           edgeOrder: [],
+          completed: true,
         });
       }
     },
@@ -872,8 +889,9 @@ export function SymbolTreeGraph({
       }
     });
 
-    // Spawn the green traveler on the active path
-    if (activePath) {
+    // Spawn the green traveler on the active path — one full traversal per step.
+    // Stops when the function execution completes.
+    if (activePath && !run.completed) {
       const path = activePath as SVGPathElement;
       const totalLen = path.getTotalLength();
       const ns = "http://www.w3.org/2000/svg";
@@ -885,18 +903,20 @@ export function SymbolTreeGraph({
       traveler.setAttribute("stroke-width", "0.5");
       traveler.style.filter = "drop-shadow(0 0 6px #22ff88) drop-shadow(0 0 12px #22ff88)";
       traveler.style.pointerEvents = "none";
-      // Append to the SVG so it sits in the same coord space as the paths.
-      // Paths live inside the zoom container, so append to the path's parent <g>.
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1400; // steady, slow travel
+      const duration = 1400; // matches step interval; one full pass per step
       const start = performance.now();
       const tick = (now: number) => {
-        const t = ((now - start) % duration) / duration;
+        const t = Math.min(1, (now - start) / duration);
         const pt = path.getPointAtLength(t * totalLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
-        travelerRafRef.current = requestAnimationFrame(tick);
+        if (t < 1) {
+          travelerRafRef.current = requestAnimationFrame(tick);
+        } else {
+          travelerRafRef.current = null;
+        }
       };
       travelerRafRef.current = requestAnimationFrame(tick);
     }
