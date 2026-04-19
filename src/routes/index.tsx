@@ -256,6 +256,40 @@ function Index() {
 
       {/* Floating pill-shaped form at the bottom */}
       <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-center gap-2 px-4">
+        {/* Legend (own row, above status messages) */}
+        {view === "symbolTree" && symbolGraph && (
+          <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
+              folder
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+              file
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#536dfe" }} />
+              function
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+              value
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-0.5" style={{ background: "var(--color-muted-foreground)" }} />
+              reference
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-0.5" style={{ background: "var(--ref-out-color)" }} />
+              referenced
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-0.5" style={{ background: "#536dfe" }} />
+              referencing
+            </span>
+          </div>
+        )}
+
         {/* Status messages */}
         {loading && progress && (
           <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
