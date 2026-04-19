@@ -336,6 +336,50 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("title")
       .text((d) => `folder: ${d.name}`);
 
+    // Bent labels along the outer rim of each folder arc.
+    const LABEL_OFFSET = 10;
+    const safeId = (s: string) => s.replace(/[^\w-]/g, "_");
+    function labelPathD(d: FolderArc): string {
+      const r = d.radius + LABEL_OFFSET;
+      const mid = (d.a0 + d.a1) / 2;
+      const m = Math.atan2(Math.sin(mid), Math.cos(mid));
+      const flip = m > 0; // lower half -> reverse so text stays upright
+      const a0 = flip ? d.a1 : d.a0;
+      const a1 = flip ? d.a0 : d.a1;
+      const x0 = cx + r * Math.cos(a0);
+      const y0 = cy + r * Math.sin(a0);
+      const x1 = cx + r * Math.cos(a1);
+      const y1 = cy + r * Math.sin(a1);
+      const sweep = flip ? 0 : 1;
+      const largeArc = Math.abs(a1 - a0) > Math.PI ? 1 : 0;
+      return `M${x0},${y0} A${r},${r} 0 ${largeArc} ${sweep} ${x1},${y1}`;
+    }
+
+    container
+      .append("g")
+      .selectAll("path")
+      .data(folderArcs)
+      .join("path")
+      .attr("id", (d) => `folder-arc-label-${safeId(d.id)}`)
+      .attr("fill", "none")
+      .attr("stroke", "none")
+      .attr("d", labelPathD);
+
+    container
+      .append("g")
+      .attr("font-family", "ui-monospace, monospace")
+      .attr("font-size", 9)
+      .attr("fill", "var(--color-chart-1)")
+      .selectAll("text")
+      .data(folderArcs)
+      .join("text")
+      .attr("dy", "0.32em")
+      .append("textPath")
+      .attr("href", (d) => `#folder-arc-label-${safeId(d.id)}`)
+      .attr("startOffset", "50%")
+      .attr("text-anchor", "middle")
+      .text((d) => d.name);
+
     const node = container
       .append("g")
       .selectAll("g")
