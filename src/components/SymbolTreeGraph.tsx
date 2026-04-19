@@ -981,6 +981,9 @@ export function SymbolTreeGraph({
         travelerRafRef.current = null;
       }
       svg.querySelectorAll(".edge-traveler").forEach((n) => n.remove());
+      svg.querySelectorAll<SVGTextElement>("g[data-node-id] text").forEach((t) => {
+        t.style.filter = "";
+      });
     };
   }, [run]);
 
