@@ -951,7 +951,7 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1400; // matches step interval; one full loop per step
+      const duration = 1500; // exactly matches the step interval — no gap
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
