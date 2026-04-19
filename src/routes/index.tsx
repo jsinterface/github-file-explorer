@@ -129,7 +129,7 @@ function symbolGraphToTree(g: SymbolGraph): Record<string, SymbolTreeNode> {
 }
 
 function Index() {
-  const [input, setInput] = useState("d3/d3");
+  const [input, setInput] = useState("jsinterface/interface");
   const [view, setView] = useState<ViewMode>("json");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
