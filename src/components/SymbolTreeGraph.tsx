@@ -448,9 +448,23 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       return n.exportKind === "function" ? FUNCTION_COLOR : VALUE_COLOR;
     };
 
+    // File outdegree: total outgoing refs from all exports in the file.
+    const fileOutdegree = new Map<string, number>();
+    outgoingByExport.forEach((targets, exportId) => {
+      const hash = exportId.indexOf("#");
+      if (!exportId.startsWith("export:") || hash < 0) return;
+      const fileId = "file:" + exportId.slice("export:".length, hash);
+      fileOutdegree.set(fileId, (fileOutdegree.get(fileId) ?? 0) + targets.size);
+    });
+    const maxFileOut = Math.max(1, ...Array.from(fileOutdegree.values()));
+
     const radiusFor = (n: RawNode) => {
       if (n.kind === "folder") return 4;
-      if (n.kind === "file") return 3.5;
+      if (n.kind === "file") {
+        const out = fileOutdegree.get(n.id) ?? 0;
+        // sqrt scale from 3 (no outgoing) up to ~10 at max outdegree.
+        return 3 + 7 * Math.sqrt(out / maxFileOut);
+      }
       return exportRadiusFor(n.id);
     };
 
