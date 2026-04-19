@@ -384,7 +384,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("g")
       .attr("font-family", "ui-monospace, monospace")
       .attr("fill", "var(--color-chart-1)")
-      .selectAll("text")
+      .selectAll<SVGTextElement, FolderArc>("text")
       .data(folderArcs)
       .join("text")
       .attr("dy", "0.32em")
