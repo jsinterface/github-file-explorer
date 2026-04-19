@@ -412,7 +412,13 @@ function Index() {
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
-              <span className="select-none pl-0.5 pr-1 text-2xl leading-none">)</span>
+              <button
+                type="submit"
+                aria-label="Submit"
+                className="select-none border-0 bg-transparent pl-0.5 pr-1 text-2xl leading-none text-muted-foreground hover:cursor-pointer focus:outline-none"
+              >
+                )
+              </button>
             </div>
           )}
           {/* Hidden submit so Enter key triggers form submission */}
