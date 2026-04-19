@@ -292,35 +292,30 @@ function Index() {
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background p-4">
         <form
           onSubmit={handleSubmit}
-          className="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-end"
+          className="mx-auto flex max-w-4xl items-end gap-3"
         >
           <div className="flex-1">
-            <Label htmlFor="repo">Repository</Label>
             <Input
               id="repo"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="owner/name or https://github.com/owner/name"
-              className="mt-1.5"
             />
           </div>
-          <div className="flex flex-col">
-            <Label htmlFor="view-select" className="mb-1.5">View</Label>
-            <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
-              <SelectTrigger id="view-select" className="sm:w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="json">JSON</SelectItem>
-                <SelectItem value="graph">Files</SelectItem>
-                <SelectItem value="imports">Imports</SelectItem>
-                <SelectItem value="symbols">Symbols</SelectItem>
-                <SelectItem value="symbolsLoom">Symbols Loom</SelectItem>
-                <SelectItem value="symbolsJson">Symbols JSON</SelectItem>
-                <SelectItem value="symbolTree">Symbol Tree</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="View" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="json">JSON</SelectItem>
+              <SelectItem value="graph">Files</SelectItem>
+              <SelectItem value="imports">Imports</SelectItem>
+              <SelectItem value="symbols">Symbols</SelectItem>
+              <SelectItem value="symbolsLoom">Symbols Loom</SelectItem>
+              <SelectItem value="symbolsJson">Symbols JSON</SelectItem>
+              <SelectItem value="symbolTree">Symbol Tree</SelectItem>
+            </SelectContent>
+          </Select>
           <Button type="submit" disabled={loading}>
             {loading
               ? "Loading…"
@@ -335,9 +330,6 @@ function Index() {
 
         {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
           <div className="mx-auto mt-3 max-w-4xl">
-            <Label htmlFor="input-json" className="mb-1.5 block">
-              Input JSON (passed as the first argument when you click a function)
-            </Label>
             <textarea
               id="input-json"
               value={inputJson}
@@ -345,7 +337,7 @@ function Index() {
               spellCheck={false}
               className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               rows={2}
-              placeholder='{"name": "world"}'
+              placeholder='Input JSON: {"name": "world"}'
             />
           </div>
         )}
