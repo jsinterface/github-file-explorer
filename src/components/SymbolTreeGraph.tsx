@@ -1060,7 +1060,11 @@ export function SymbolTreeGraph({
             filePath={run.filePath}
             step={run.step}
             result={run.result}
-            onClose={() => setRun(null)}
+            onClose={() => {
+              cancelRef.current.cancelled = true;
+              cancelRef.current = { cancelled: false };
+              setStack([]);
+            }}
           />
         )}
         <svg
