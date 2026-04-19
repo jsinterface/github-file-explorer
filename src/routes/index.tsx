@@ -346,7 +346,7 @@ function Index() {
               <SelectItem value="imports">Imports</SelectItem>
               <SelectItem value="symbols">Symbols</SelectItem>
               
-              <SelectItem value="symbolsJson">Symbols JSON</SelectItem>
+              <SelectItem value="symbolsJson">References</SelectItem>
               <SelectItem value="symbolTree">Symbol Tree</SelectItem>
             </SelectContent>
           </Select>
