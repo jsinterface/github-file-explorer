@@ -57,15 +57,16 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
           children: [],
         };
         const shortFile = parts.slice(-2).join("/");
-        for (const [exportName, refs] of Object.entries(child)) {
+        for (const [exportName, leaf] of Object.entries(child)) {
           const exportId = `export:${path}#${exportName}`;
           fileNode.children!.push({
             id: exportId,
             name: exportName,
             kind: "export",
+            exportKind: leaf.kind,
           });
           labelToId.set(`${shortFile}:${exportName}`, exportId);
-          refsByExport.set(exportId, refs);
+          refsByExport.set(exportId, leaf.refs);
         }
         out.push(fileNode);
       } else {
