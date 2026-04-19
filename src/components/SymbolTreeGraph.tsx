@@ -145,9 +145,17 @@ export function SymbolTreeGraph({
           });
           return;
         }
-        const edgeOrder = trace.callSites
-          .map((cs) => labelToTargetId.get(cs.name))
-          .filter((x): x is string => Boolean(x));
+        // Build edgeOrder aligned with call sites, then filter out value-target refs from animation.
+        const filteredCallSites: typeof trace.callSites = [];
+        const edgeOrder: string[] = [];
+        for (const cs of trace.callSites) {
+          const tid = labelToTargetId.get(cs.name);
+          if (!tid) continue;
+          if (built.kindById.get(tid) !== "function") continue;
+          filteredCallSites.push(cs);
+          edgeOrder.push(tid);
+        }
+        trace.callSites = filteredCallSites;
 
         // Try to execute against the JSON input.
         let result: RunState["result"] = null;
