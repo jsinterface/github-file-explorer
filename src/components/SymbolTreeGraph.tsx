@@ -36,10 +36,12 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
   trees: RawNode[];
   labelToId: Map<string, string>;
   refsByExport: Map<string, string[]>;
+  kindById: Map<string, "function" | "value">;
 } {
   const trees: RawNode[] = [];
   const labelToId = new Map<string, string>();
   const refsByExport = new Map<string, string[]>();
+  const kindById = new Map<string, "function" | "value">();
 
   function build(obj: Record<string, SymbolTreeNode>, pathParts: string[]): RawNode[] {
     const out: RawNode[] = [];
@@ -64,6 +66,7 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
           });
           labelToId.set(`${shortFile}:${exportName}`, exportId);
           refsByExport.set(exportId, leaf.refs);
+          kindById.set(exportId, leaf.kind);
         }
         out.push(fileNode);
       } else {
@@ -79,7 +82,7 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
   }
 
   trees.push(...build(tree, []));
-  return { trees, labelToId, refsByExport };
+  return { trees, labelToId, refsByExport, kindById };
 }
 
 type RepoMeta = { owner: string; repo: string; branch: string };
