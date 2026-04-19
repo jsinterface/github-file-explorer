@@ -610,6 +610,17 @@ export function SymbolTreeGraph({
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#536dfe");
 
+    // White glow filter applied to a node label on hover.
+    const glow = defs.append("filter").attr("id", "label-glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
+    glow.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 2.5).attr("result", "blur1");
+    glow.append("feFlood").attr("flood-color", "#ffffff").attr("flood-opacity", 1).attr("result", "white");
+    glow.append("feComposite").attr("in", "white").attr("in2", "blur1").attr("operator", "in").attr("result", "glow1");
+    const merge = glow.append("feMerge");
+    merge.append("feMergeNode").attr("in", "glow1");
+    merge.append("feMergeNode").attr("in", "glow1");
+    merge.append("feMergeNode").attr("in", "glow1");
+    merge.append("feMergeNode").attr("in", "SourceGraphic");
+
     const refSel = container
       .append("g")
       .attr("fill", "none")
@@ -826,15 +837,23 @@ export function SymbolTreeGraph({
     }
 
     node
-      .on("mouseenter", (_e, d) => {
+      .on("mouseenter", (e, d) => {
         if (d.node.data.kind === "export") {
           applyHighlight(new Set([d.node.data.id]));
         } else {
           const exports = exportsByContainer.get(d.node.data.id) ?? new Set();
           applyHighlight(exports);
         }
+        d3.select(e.currentTarget as SVGGElement)
+          .select<SVGTextElement>("text.node-label")
+          .attr("filter", "url(#label-glow)");
       })
-      .on("mouseleave", clearHighlight)
+      .on("mouseleave", (e) => {
+        clearHighlight();
+        d3.select(e.currentTarget as SVGGElement)
+          .select<SVGTextElement>("text.node-label")
+          .attr("filter", null);
+      })
       .on("click", (_e, d) => {
         if (d.node.data.kind !== "export") return;
         if (d.node.data.exportKind !== "function") return;
@@ -864,6 +883,7 @@ export function SymbolTreeGraph({
     // All labels point radially outward (away from the chart center).
     node
       .append("text")
+      .attr("class", "node-label")
       .attr("transform", (d) => {
         const deg = (d.angle * 180) / Math.PI;
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
