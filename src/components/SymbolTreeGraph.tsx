@@ -195,6 +195,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       a0: number;
       a1: number;
       radius: number;
+      depth: number;
       name: string;
     };
     const folderArcs: FolderArc[] = [];
@@ -217,10 +218,19 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
           a0,
           a1,
           radius: fp.radius,
+          depth: n.depth ?? 0,
           name: n.data.name,
         });
       });
     });
+
+    // Outer rings (smaller depth) get larger labels.
+    const allMaxDepth = Math.max(1, ...placed.map((p) => p.depth));
+    function ringFontSize(depth: number, base: number): number {
+      const t = Math.min(1, depth / allMaxDepth);
+      const scale = 1.6 - t * (1.6 - 0.85);
+      return Math.max(6, Math.round(base * scale));
+    }
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
