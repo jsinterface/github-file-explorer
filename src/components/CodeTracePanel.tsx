@@ -103,9 +103,9 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {result && (
-        <div className="border-t border-border">
+        <div className="border-t border-border/40">
           <button
-            className="flex w-full items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+            className="flex w-full items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40"
             onClick={() => setResultOpen((v) => !v)}
           >
             <span>
@@ -114,7 +114,7 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
             <span>{resultOpen ? "▾" : "▸"}</span>
           </button>
           {resultOpen && (
-            <pre className="max-h-40 overflow-auto bg-muted/50 px-3 pb-3 font-mono text-xs">
+            <pre className="max-h-40 overflow-auto bg-transparent px-3 pb-3 font-mono text-xs">
               {result.ok
                 ? safeStringify(result.value)
                 : result.error}
