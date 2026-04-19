@@ -924,7 +924,8 @@ export function SymbolTreeGraph({
       });
       return;
     }
-    const activeTarget = run.step >= 0 ? run.edgeOrder[run.step] : null;
+    const activeTarget =
+      run.step >= 0 && run.step < run.edgeOrder.length ? run.edgeOrder[run.step] : null;
     const visited = new Set(run.edgeOrder.slice(0, Math.max(0, run.step)));
 
     let activePath: SVGPathElement | null = null;
@@ -951,7 +952,7 @@ export function SymbolTreeGraph({
     });
 
     // Glow the active target's label so the user sees which symbol is being called.
-    if (activeTarget && !run.completed) {
+    if (activeTarget) {
       const targetText = svg.querySelector<SVGTextElement>(
         `g[data-node-id="${CSS.escape(activeTarget)}"] text`,
       );
@@ -961,57 +962,53 @@ export function SymbolTreeGraph({
       }
     }
 
-    // Spawn the green traveler — full circular loop per step:
-    // forward along the chord (source -> target), then a bezier arc
-    // returning OUTSIDE the symbol ring back to the source.
-    // Stops when the function execution completes.
-    if (activePath && !run.completed) {
+    // Spawn the green traveler. Direction "forward" runs source -> target along
+    // the reference chord. Direction "returning" runs target -> source along
+    // an outer arc bulging past the symbol ring (simulating the call returning).
+    if (activePath) {
       const path = activePath as SVGPathElement;
       const ns = "http://www.w3.org/2000/svg";
 
       // Derive outer ring radius from viewBox: size = (outerR + 60) * 2.
       const vb = svg.viewBox.baseVal;
       const outerR = vb.width / 2 - 60;
-      // Center of the chart in viewBox coords (chart is centered on 0,0).
       const cx = 0;
       const cy = 0;
 
-      // Endpoints of the forward edge.
       const fwdLen = path.getTotalLength();
       const startPt = path.getPointAtLength(0);
       const endPt = path.getPointAtLength(fwdLen);
 
-      // Return arc: extrapolate the reference edge outward. The chord's
-      // tangent at each endpoint points radially outward from center
-      // (controls were at center), so continuing along that direction
-      // sweeps the traveler out past the ring before curving back.
-      const ringR = outerR + 120; // how far outside the ring the loop bulges
+      // Outer return arc geometry (used for "returning" direction).
+      const ringR = outerR + 120;
       const rT = Math.hypot(endPt.x - cx, endPt.y - cy) || 1;
       const rS = Math.hypot(startPt.x - cx, startPt.y - cy) || 1;
-      // Unit radial vectors at target and source.
       const uTx = (endPt.x - cx) / rT;
       const uTy = (endPt.y - cy) / rT;
       const uSx = (startPt.x - cx) / rS;
       const uSy = (startPt.y - cy) / rS;
-      // Push controls far out along each endpoint's outward radial — this
-      // makes the curve leave the target tangentially and re-enter the
-      // source tangentially, producing a round loop outside the ring.
       const c1x = cx + uTx * ringR;
       const c1y = cy + uTy * ringR;
       const c2x = cx + uSx * ringR;
       const c2y = cy + uSy * ringR;
 
-      // Build a hidden combined loop path: forward edge "d" + return cubic.
-      const fwdD = path.getAttribute("d") ?? "";
-      const loopD = `${fwdD} C${c1x},${c1y} ${c2x},${c2y} ${startPt.x},${startPt.y}`;
-      const loopPath = document.createElementNS(ns, "path");
-      loopPath.setAttribute("class", "edge-traveler");
-      loopPath.setAttribute("d", loopD);
-      loopPath.setAttribute("fill", "none");
-      loopPath.setAttribute("stroke", "none");
-      loopPath.style.pointerEvents = "none";
-      path.parentNode?.appendChild(loopPath);
-      const loopLen = loopPath.getTotalLength();
+      // Build an animation path that matches the requested direction.
+      let animD: string;
+      if (run.direction === "forward") {
+        animD = path.getAttribute("d") ?? `M${startPt.x},${startPt.y} L${endPt.x},${endPt.y}`;
+      } else {
+        // Return arc: target -> outer arc -> source.
+        animD = `M${endPt.x},${endPt.y} C${c1x},${c1y} ${c2x},${c2y} ${startPt.x},${startPt.y}`;
+      }
+
+      const animPath = document.createElementNS(ns, "path");
+      animPath.setAttribute("class", "edge-traveler");
+      animPath.setAttribute("d", animD);
+      animPath.setAttribute("fill", "none");
+      animPath.setAttribute("stroke", "none");
+      animPath.style.pointerEvents = "none";
+      path.parentNode?.appendChild(animPath);
+      const animLen = animPath.getTotalLength();
 
       const traveler = document.createElementNS(ns, "circle");
       traveler.setAttribute("class", "edge-traveler");
@@ -1023,11 +1020,11 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1500; // exactly matches the step interval — no gap
+      const duration = 1500; // matches STEP_MS
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
-        const pt = loopPath.getPointAtLength(t * loopLen);
+        const pt = animPath.getPointAtLength(t * animLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
         if (t < 1) {
@@ -1049,7 +1046,7 @@ export function SymbolTreeGraph({
         t.style.filter = "";
       });
     };
-  }, [run]);
+  }, [run?.sourceExportId, run?.step, run?.direction, run?.edgeOrder]);
 
   const refCount = Array.from(built.refsByExport.values()).reduce((a, b) => a + b.length, 0);
   const exportCount = built.refsByExport.size;
