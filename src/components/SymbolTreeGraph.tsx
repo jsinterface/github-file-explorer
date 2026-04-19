@@ -875,8 +875,17 @@ export function SymbolTreeGraph({
 
   return (
     <div className="rounded-md border border-border bg-muted">
-      <div className="max-h-[80vh] overflow-hidden">
-        <svg ref={ref} className="w-full" style={{ height: "75vh" }} />
+      <div className="relative max-h-[80vh] overflow-hidden">
+        {run && (
+          <CodeTracePanel
+            trace={run.trace}
+            filePath={run.filePath}
+            step={run.step}
+            result={run.result}
+            onClose={() => setRun(null)}
+          />
+        )}
+        <svg ref={ref} className="relative w-full" style={{ height: "75vh" }} />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
