@@ -251,12 +251,30 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       return `M${s.x},${s.y} C${c1x},${c1y} ${c2x},${c2y} ${t.x},${t.y}`;
     }
 
-    container
+    // Build leaf -> ancestor folder ids and link key set per leaf.
+    const linkKey = (s: string, t: string) => `${s}__${t}`;
+    const leafAncestors = new Map<string, { folders: Set<string>; links: Set<string> }>();
+    hierarchies.forEach((h) => {
+      h.descendants().forEach((n) => {
+        if (n.data.kind === "folder") return;
+        const folders = new Set<string>();
+        const links = new Set<string>();
+        let cur: d3.HierarchyNode<RawNode> | null = n;
+        while (cur && cur.parent) {
+          links.add(linkKey(cur.parent.data.id, cur.data.id));
+          if (cur.parent.data.kind === "folder") folders.add(cur.parent.data.id);
+          cur = cur.parent;
+        }
+        leafAncestors.set(n.data.id, { folders, links });
+      });
+    });
+
+    const linkSel = container
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-border)")
       .attr("stroke-width", 1)
-      .selectAll("path")
+      .selectAll<SVGPathElement, { s: Placed; t: Placed }>("path")
       .data(allLinks)
       .join("path")
       .attr("d", (l) => linkPath(l.s, l.t));
@@ -327,19 +345,18 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .startAngle((d) => d.a0 + Math.PI / 2)
       .endAngle((d) => d.a1 + Math.PI / 2);
 
-    container
+    const folderArcSel = container
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-chart-1)")
       .attr("stroke-width", 2.5)
       .attr("stroke-linecap", "round")
       .attr("transform", `translate(${cx},${cy})`)
-      .selectAll("path")
+      .selectAll<SVGPathElement, FolderArc>("path")
       .data(folderArcs)
       .join("path")
-      .attr("d", (d) => arcGen(d))
-      .append("title")
-      .text((d) => `folder: ${d.name}`);
+      .attr("d", (d) => arcGen(d));
+    folderArcSel.append("title").text((d) => `folder: ${d.name}`);
 
     // Bent labels along the outer rim of each folder arc.
     const LABEL_OFFSET = 10;
@@ -390,10 +407,33 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     const node = container
       .append("g")
-      .selectAll("g")
+      .selectAll<SVGGElement, Placed>("g")
       .data(placed.filter((p) => p.node.data.kind !== "folder"))
       .join("g")
-      .attr("transform", (d) => `translate(${d.x},${d.y})`);
+      .attr("transform", (d) => `translate(${d.x},${d.y})`)
+      .style("cursor", "pointer")
+      .on("mouseenter", (_e, d) => {
+        const anc = leafAncestors.get(d.node.data.id);
+        if (!anc) return;
+        linkSel
+          .attr("stroke", (l) =>
+            anc.links.has(linkKey(l.s.node.data.id, l.t.node.data.id))
+              ? "var(--color-chart-4)"
+              : "var(--color-border)",
+          )
+          .attr("stroke-width", (l) =>
+            anc.links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? 2 : 1,
+          );
+        folderArcSel
+          .attr("stroke", (a) =>
+            anc.folders.has(a.id) ? "var(--color-chart-4)" : "var(--color-chart-1)",
+          )
+          .attr("stroke-width", (a) => (anc.folders.has(a.id) ? 4 : 2.5));
+      })
+      .on("mouseleave", () => {
+        linkSel.attr("stroke", "var(--color-border)").attr("stroke-width", 1);
+        folderArcSel.attr("stroke", "var(--color-chart-1)").attr("stroke-width", 2.5);
+      });
 
     node
       .append("circle")
