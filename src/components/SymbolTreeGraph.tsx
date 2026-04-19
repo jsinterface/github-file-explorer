@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { ChevronDown, ChevronUp, Tornado } from "lucide-react";
+import { ChevronDown, ChevronUp, Footprints, Tornado } from "lucide-react";
 import { analyzeFunctionInSource, fetchRawFile, loadModuleFromSource, type FunctionTrace } from "@/lib/runFunction";
 import { CodeTracePanel } from "./CodeTracePanel";
 
@@ -113,6 +113,9 @@ export function SymbolTreeGraph({
   };
   const [stack, setStack] = useState<Frame[]>([]);
   const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
+  // Per-frame skip tokens, parallel to `stack`. Setting top.skip = true terminates
+  // the current frame's animation loop and pops it, returning control to its parent.
+  const skipStackRef = useRef<{ skip: boolean }[]>([]);
 
   // Animation speed multiplier: higher = faster. 1 = base 1500ms per step.
   const [speed, setSpeed] = useState(1);
@@ -252,7 +255,9 @@ export function SymbolTreeGraph({
       const frame = await buildFrame(exportId, executeFn);
       if (token.cancelled || !frame) return;
 
-      // Push frame onto stack.
+      // Push frame + matching skip token.
+      const skipToken = { skip: false };
+      skipStackRef.current.push(skipToken);
       setStack((s) => [...s, frame]);
 
       const total = frame.edgeOrder.length;
@@ -261,6 +266,7 @@ export function SymbolTreeGraph({
 
       for (let i = 0; i < total; i++) {
         if (token.cancelled) return;
+        if (skipToken.skip) break;
         // Update top frame: forward direction at step i.
         setStack((s) => {
           if (s.length === 0) return s;
@@ -270,6 +276,7 @@ export function SymbolTreeGraph({
         // Wait for the forward traveler to arrive.
         await sleep(stepMs());
         if (token.cancelled) return;
+        if (skipToken.skip) break;
 
         const targetId = frame.edgeOrder[i];
         // Recurse if target is a known function with its own refs and not already on the stack.
@@ -278,6 +285,7 @@ export function SymbolTreeGraph({
         if (targetIsKnown && !nextPath.has(targetId) && !noRecurseRef.current) {
           await animateFrame(targetId, nextPath, false);
           if (token.cancelled) return;
+          if (skipToken.skip) break;
         }
 
         // Animate return: target -> source.
@@ -288,13 +296,20 @@ export function SymbolTreeGraph({
         });
         await sleep(stepMs());
         if (token.cancelled) return;
+        if (skipToken.skip) break;
       }
 
-      // Pop frame.
+      // Pop frame + skip token.
+      skipStackRef.current.pop();
       setStack((s) => s.slice(0, -1));
     },
     [buildFrame, built],
   );
+
+  const handleSkipFrame = useCallback(() => {
+    const top = skipStackRef.current[skipStackRef.current.length - 1];
+    if (top) top.skip = true;
+  }, []);
 
   const handleExportClick = useCallback(
     async (exportId: string, exportKind: "function" | "value") => {
