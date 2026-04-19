@@ -902,7 +902,7 @@ export function SymbolTreeGraph({
             onClose={() => setRun(null)}
           />
         )}
-        <svg ref={ref} className="relative w-full" style={{ height: "75vh" }} />
+        <svg ref={ref} className="relative w-full [&_*]:pointer-events-auto" style={{ height: "75vh", pointerEvents: "none" }} />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
