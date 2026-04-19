@@ -14,7 +14,7 @@ import { FileGraph } from "@/components/FileGraph";
 
 import { ImportGraphView } from "@/components/ImportGraph";
 import { SymbolGraphView } from "@/components/SymbolGraph";
-import { SymbolLoomView } from "@/components/SymbolLoom";
+
 import { SymbolTreeGraph } from "@/components/SymbolTreeGraph";
 import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
 import { buildSymbolGraph, type SymbolGraph } from "@/lib/symbolGraph";
@@ -84,7 +84,6 @@ type ViewMode =
   | "graph"
   | "imports"
   | "symbols"
-  | "symbolsLoom"
   | "symbolsJson"
   | "symbolTree";
 
@@ -169,7 +168,7 @@ function Index() {
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
       setRepoMeta({ owner: parsed.owner, repo: parsed.repo, branch });
-      if (view === "imports" || view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") {
+      if (view === "imports" || view === "symbols" || view === "symbolsJson" || view === "symbolTree") {
         if (view === "imports") {
           const graph = await buildImportGraph(
             parsed.owner,
@@ -241,7 +240,7 @@ function Index() {
           )}
           {view === "imports" && importGraph && <ImportGraphView data={importGraph} />}
           {view === "symbols" && symbolGraph && <SymbolGraphView data={symbolGraph} />}
-          {view === "symbolsLoom" && symbolGraph && <SymbolLoomView data={symbolGraph} />}
+          
           {view === "symbolsJson" && symbolGraph && (
             <pre className="h-full w-full overflow-auto rounded-none border-0 bg-muted p-4 font-mono text-xs text-foreground">
               {JSON.stringify(symbolGraphToTree(symbolGraph), null, 2)}
@@ -301,13 +300,13 @@ function Index() {
                       <span className="font-mono">{result.repo}</span> · branch{" "}
                       <span className="font-mono">{result.branch}</span>
                     </span>
-                    {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+                    {view !== "imports" && view !== "symbols" && view !== "symbolsJson" && view !== "symbolTree" && (
                       <span>· {result.items.length} entries</span>
                     )}
                     {view === "imports" && importGraph && (
                       <span>· {importGraph.fileCount} source files</span>
                     )}
-                    {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+                    {(view === "symbols" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
                       <span>
                         · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
                         {symbolGraph.links.length} refs
@@ -346,12 +345,12 @@ function Index() {
               <SelectItem value="graph">Files</SelectItem>
               <SelectItem value="imports">Imports</SelectItem>
               <SelectItem value="symbols">Symbols</SelectItem>
-              <SelectItem value="symbolsLoom">Symbols Loom</SelectItem>
+              
               <SelectItem value="symbolsJson">Symbols JSON</SelectItem>
               <SelectItem value="symbolTree">Symbol Tree</SelectItem>
             </SelectContent>
           </Select>
-          {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
+          {(view === "symbolTree" || view === "symbols") && (
             <div className="flex items-center font-mono text-xs text-muted-foreground">
               <span className="select-none pl-1 pr-0.5 text-2xl leading-none">(</span>
               {inputArgs.map((arg, i) => {
