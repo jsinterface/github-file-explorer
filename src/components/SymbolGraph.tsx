@@ -51,7 +51,7 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
     const link = container
       .append("g")
       .attr("stroke", "var(--color-border)")
-      .attr("stroke-opacity", 1)
+      .attr("stroke-opacity", 0.5)
       .selectAll("line")
       .data(links)
       .join("line")
