@@ -40,7 +40,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       byFile.get(n.file)!.push(n);
     }
     const files = Array.from(byFile.keys()).sort(
-      (a, b) => (byFile.get(b)!.length - byFile.get(a)!.length) || a.localeCompare(b),
+      (a, b) => byFile.get(b)!.length - byFile.get(a)!.length || a.localeCompare(b),
     );
     for (const f of files) {
       byFile.get(f)!.sort((a, b) => a.name.localeCompare(b.name));
@@ -135,9 +135,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
-    svg
-      .attr("viewBox", `0 0 ${size} ${size}`)
-      .attr("preserveAspectRatio", "xMidYMid meet");
+    svg.attr("viewBox", `0 0 ${size} ${size}`).attr("preserveAspectRatio", "xMidYMid meet");
 
     const container = svg.append("g");
 
@@ -264,8 +262,8 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       const t0y = cy + r * Math.sin(c.ta0);
       const t1x = cx + r * Math.cos(c.ta1);
       const t1y = cy + r * Math.sin(c.ta1);
-      const sLargeArc = (c.sa1 - c.sa0) > Math.PI ? 1 : 0;
-      const tLargeArc = (c.ta1 - c.ta0) > Math.PI ? 1 : 0;
+      const sLargeArc = c.sa1 - c.sa0 > Math.PI ? 1 : 0;
+      const tLargeArc = c.ta1 - c.ta0 > Math.PI ? 1 : 0;
       // Untwist: source end (s1) connects to target start (t0); target end (t1) connects back to source start (s0).
       return [
         `M${s0x},${s0y}`,
@@ -288,8 +286,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
 
     // Map each file to its assigned color (from fileArcs)
     const fileColor = new Map(fileArcs.map((f) => [f.file, f.color]));
-    const colorForChord = (c: ChordSeg) =>
-      fileColor.get(c.r.target.file) ?? "var(--color-chart-3)";
+    const colorForChord = (c: ChordSeg) => fileColor.get(c.r.target.file) ?? "var(--color-chart-3)";
 
     const chordPaths = container
       .append("g")
@@ -326,9 +323,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
     nodeG
       .append("path")
       .attr("d", (d) => nodeArcGen(d)!)
-      .attr("fill", (d) =>
-        d.kind === "function" ? "var(--color-chart-1)" : "var(--color-chart-2)",
-      )
+      .attr("fill", (d) => (d.kind === "function" ? "var(--color-chart-1)" : "var(--color-chart-2)"))
       .attr("stroke", "var(--color-background)")
       .attr("stroke-width", 0.4);
 
@@ -351,9 +346,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
         nodeG.select("path").attr("opacity", (n) => (partnerIds.has((n as Placed).id) ? 1 : 0.25));
       })
       .on("mouseleave", () => {
-        chordPaths
-          .attr("fill-opacity", 0.22)
-          .attr("stroke-opacity", 0.4);
+        chordPaths.attr("fill-opacity", 0.22).attr("stroke-opacity", 0.4);
         nodeG.select("path").attr("opacity", 1);
       });
 
@@ -369,9 +362,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
         const r = nodeOuterR + 2;
         const x = r * Math.cos(d.angle);
         const y = r * Math.sin(d.angle);
-        return flip
-          ? `translate(${x},${y}) rotate(${deg + 180})`
-          : `translate(${x},${y}) rotate(${deg})`;
+        return flip ? `translate(${x},${y}) rotate(${deg + 180})` : `translate(${x},${y}) rotate(${deg})`;
       })
       .attr("text-anchor", (d) => {
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
@@ -394,30 +385,21 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
   }, [built]);
 
   return (
-    <div className="rounded-md border border-border bg-muted">
+    <div className="rounded-md border border-border">
       <div className="max-h-[80vh] overflow-hidden">
         <svg ref={ref} className="w-full" style={{ height: "75vh" }} />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-1)" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
           function export
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-2)" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-2)" }} />
           value export
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-0.5"
-            style={{ background: "var(--color-chart-3)" }}
-          />
+          <span className="inline-block h-2.5 w-0.5" style={{ background: "var(--color-chart-3)" }} />
           reference
         </span>
         <span>nodes grouped by file · scaled by indegree</span>

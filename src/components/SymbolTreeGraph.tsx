@@ -1,20 +1,13 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import {
-  analyzeFunctionInSource,
-  fetchRawFile,
-  loadModuleFromSource,
-  type FunctionTrace,
-} from "@/lib/runFunction";
+import { analyzeFunctionInSource, fetchRawFile, loadModuleFromSource, type FunctionTrace } from "@/lib/runFunction";
 import { CodeTracePanel } from "./CodeTracePanel";
 
 export type SymbolLeaf = {
   kind: "function" | "value";
   refs: string[];
 };
-export type SymbolTreeNode =
-  | { [key: string]: SymbolTreeNode }
-  | Record<string, SymbolLeaf>;
+export type SymbolTreeNode = { [key: string]: SymbolTreeNode } | Record<string, SymbolLeaf>;
 
 type RawNode = {
   id: string;
@@ -48,10 +41,7 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
   const labelToId = new Map<string, string>();
   const refsByExport = new Map<string, string[]>();
 
-  function build(
-    obj: Record<string, SymbolTreeNode>,
-    pathParts: string[],
-  ): RawNode[] {
+  function build(obj: Record<string, SymbolTreeNode>, pathParts: string[]): RawNode[] {
     const out: RawNode[] = [];
     for (const [name, child] of Object.entries(obj)) {
       const parts = [...pathParts, name];
@@ -247,12 +237,8 @@ export function SymbolTreeGraph({
     // Scale ring radii based on leaf density AND average export size so
     // larger nodes get proportionally more breathing room.
     const avgExportR =
-      hierarchies.reduce(
-        (acc, h) =>
-          acc +
-          h.leaves().reduce((s, l) => s + exportRadiusFor(l.data.id), 0),
-        0,
-      ) / Math.max(1, totalLeaves);
+      hierarchies.reduce((acc, h) => acc + h.leaves().reduce((s, l) => s + exportRadiusFor(l.data.id), 0), 0) /
+      Math.max(1, totalLeaves);
     const MIN_ARC_PER_LEAF = Math.max(14, avgExportR * 3.2);
     const BASE_INNER = 120;
     const BASE_OUTER = 420;
@@ -345,10 +331,7 @@ export function SymbolTreeGraph({
       // Containment links — skip any link touching a folder; folders are
       // rendered as ring arcs spanning their descendants instead.
       h.links().forEach((l) => {
-        if (
-          l.source.data.kind === "folder" ||
-          l.target.data.kind === "folder"
-        ) {
+        if (l.source.data.kind === "folder" || l.target.data.kind === "folder") {
           return;
         }
         const s = idToPlaced.get(l.source.data.id);
@@ -394,9 +377,7 @@ export function SymbolTreeGraph({
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
-    svg
-      .attr("viewBox", `${-size / 2} ${-size / 2} ${size} ${size}`)
-      .attr("preserveAspectRatio", "xMidYMid meet");
+    svg.attr("viewBox", `${-size / 2} ${-size / 2} ${size} ${size}`).attr("preserveAspectRatio", "xMidYMid meet");
 
     const container = svg.append("g");
 
@@ -440,10 +421,7 @@ export function SymbolTreeGraph({
 
     // Build leaf -> ancestor folder ids, file ids, and link key set per leaf.
     const linkKey = (s: string, t: string) => `${s}__${t}`;
-    const leafAncestors = new Map<
-      string,
-      { folders: Set<string>; files: Set<string>; links: Set<string> }
-    >();
+    const leafAncestors = new Map<string, { folders: Set<string>; files: Set<string>; links: Set<string> }>();
     hierarchies.forEach((h) => {
       h.descendants().forEach((n) => {
         if (n.data.kind === "folder") return;
@@ -493,7 +471,7 @@ export function SymbolTreeGraph({
     }
 
     const defs = svg.append("defs");
-    
+
     // Arrow marker for full opacity (highlighted)
     defs
       .append("marker")
@@ -507,7 +485,7 @@ export function SymbolTreeGraph({
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "var(--ref-out-color)");
-    
+
     // Arrow marker for dimmed opacity
     defs
       .append("marker")
@@ -662,7 +640,7 @@ export function SymbolTreeGraph({
 
     container
       .append("g")
-      .attr("font-family", "\"Averia Serif Libre\", ui-monospace, monospace")
+      .attr("font-family", '"Averia Serif Libre", ui-monospace, monospace')
       .attr("fill", "white")
       .attr("stroke", "black")
       .attr("stroke-width", 4)
@@ -726,9 +704,7 @@ export function SymbolTreeGraph({
         a.links.forEach((l) => links.add(l));
       });
 
-      linkSel.attr("stroke-opacity", (l) =>
-        links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? FULL : DIM,
-      );
+      linkSel.attr("stroke-opacity", (l) => (links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? FULL : DIM));
       folderArcSel.attr("stroke-opacity", (a) => (folders.has(a.id) ? FULL : DIM));
       refSel
         .attr("stroke", (p) => {
@@ -798,9 +774,7 @@ export function SymbolTreeGraph({
       .attr("r", (d) => radiusFor(d.node.data))
       .attr("fill", (d) => colorFor(d.node.data));
 
-    node
-      .append("title")
-      .text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
+    node.append("title").text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
 
     // Scale labels by ring distance: center = 0em, outer ring = 1em.
     const nodeFontSizeFor = (r: number) => `${r / outerR}em`;
@@ -823,7 +797,7 @@ export function SymbolTreeGraph({
         return flip ? -r : r;
       })
       .attr("dy", "0.32em")
-      .attr("font-family", "\"Averia Serif Libre\", ui-monospace, monospace")
+      .attr("font-family", '"Averia Serif Libre", ui-monospace, monospace')
       .attr("font-size", (d) => nodeFontSizeFor(d.radius))
       .attr("fill", "white")
       .attr("stroke", "black")
@@ -884,14 +858,11 @@ export function SymbolTreeGraph({
     });
   }, [run]);
 
-  const refCount = Array.from(built.refsByExport.values()).reduce(
-    (a, b) => a + b.length,
-    0,
-  );
+  const refCount = Array.from(built.refsByExport.values()).reduce((a, b) => a + b.length, 0);
   const exportCount = built.refsByExport.size;
 
   return (
-    <div className="rounded-md border border-border bg-muted">
+    <div className="rounded-md border border-border">
       <div className="relative max-h-[80vh] overflow-hidden">
         {run && (
           <CodeTracePanel
@@ -902,14 +873,15 @@ export function SymbolTreeGraph({
             onClose={() => setRun(null)}
           />
         )}
-        <svg ref={ref} className="relative w-full [&_*]:pointer-events-auto" style={{ height: "75vh", pointerEvents: "none" }} />
+        <svg
+          ref={ref}
+          className="relative w-full [&_*]:pointer-events-auto"
+          style={{ height: "75vh", pointerEvents: "none" }}
+        />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-1)" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
           folder
         </span>
         <span className="flex items-center gap-1.5">
@@ -920,24 +892,15 @@ export function SymbolTreeGraph({
           file
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "#536dfe" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#536dfe" }} />
           function
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "#ffff00" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#ffff00" }} />
           value
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-0.5"
-            style={{ background: "var(--color-muted-foreground)" }}
-          />
+          <span className="inline-block h-2.5 w-0.5" style={{ background: "var(--color-muted-foreground)" }} />
           reference
         </span>
         <span>
