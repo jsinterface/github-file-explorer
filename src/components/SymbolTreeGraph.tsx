@@ -539,9 +539,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     node
       .append("circle")
       .attr("r", (d) => radiusFor(d.node.data.kind))
-      .attr("fill", (d) => colorFor(d.node.data.kind))
-      .attr("stroke", "var(--color-background)")
-      .attr("stroke-width", 1);
+      .attr("fill", (d) => colorFor(d.node.data.kind));
 
     node
       .append("title")
