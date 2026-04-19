@@ -329,7 +329,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "var(--color-chart-3)")
-      .attr("fill-opacity", DIM);
+      .attr("fill-opacity", 0.12);
 
     const refSel = container
       .append("g")
