@@ -8,6 +8,7 @@ import { FileGraph } from "@/components/FileGraph";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ImportGraphView } from "@/components/ImportGraph";
 import { SymbolGraphView } from "@/components/SymbolGraph";
+import { SymbolLoomView } from "@/components/SymbolLoom";
 import { SymbolTreeGraph } from "@/components/SymbolTreeGraph";
 import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
 import { buildSymbolGraph, type SymbolGraph } from "@/lib/symbolGraph";
@@ -72,7 +73,14 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
   return root;
 }
 
-type ViewMode = "json" | "graph" | "imports" | "symbols" | "symbolsJson" | "symbolTree";
+type ViewMode =
+  | "json"
+  | "graph"
+  | "imports"
+  | "symbols"
+  | "symbolsLoom"
+  | "symbolsJson"
+  | "symbolTree";
 
 type SymbolTreeNode =
   | { [key: string]: SymbolTreeNode }
