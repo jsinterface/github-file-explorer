@@ -227,39 +227,6 @@ function Index() {
     <div className="min-h-screen bg-background">
       {/* Full-screen visualization area */}
       <div className="h-screen w-full">
-        {loading && progress && (
-          <div className="absolute left-4 top-4 z-10 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
-            {progress}
-          </div>
-        )}
-
-        {error && (
-          <div className="absolute left-4 top-4 z-10 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        {result && (
-          <div className="absolute left-4 top-4 z-10 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-            <span className="font-mono">{result.repo}</span> · branch{" "}
-            <span className="font-mono">{result.branch}</span>
-            {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
-              <> · {result.items.length} entries</>
-            )}
-            {view === "imports" && importGraph && (
-              <> · {importGraph.fileCount} source files</>
-            )}
-            {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
-              <>
-                {" "}
-                · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
-                {symbolGraph.links.length} refs
-              </>
-            )}
-            {result.truncated && " · truncated"}
-          </div>
-        )}
-
         <div className="h-full w-full">
           {view === "json" && result && (
             <pre className="h-full w-full overflow-auto rounded-none border-0 bg-muted p-4 font-mono text-xs text-foreground">
@@ -326,6 +293,40 @@ function Index() {
           </Button>
           <ThemeToggle />
         </form>
+
+        {/* Status messages */}
+        {loading && progress && (
+          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-border bg-muted p-2 text-xs text-muted-foreground">
+            {progress}
+          </div>
+        )}
+
+        {error && (
+          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+            <span className="font-mono">{result.repo}</span> · branch{" "}
+            <span className="font-mono">{result.branch}</span>
+            {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+              <> · {result.items.length} entries</>
+            )}
+            {view === "imports" && importGraph && (
+              <> · {importGraph.fileCount} source files</>
+            )}
+            {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+              <>
+                {" "}
+                · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                {symbolGraph.links.length} refs
+              </>
+            )}
+            {result.truncated && " · truncated"}
+          </div>
+        )}
 
         {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
           <div className="mx-auto mt-3 max-w-4xl">
