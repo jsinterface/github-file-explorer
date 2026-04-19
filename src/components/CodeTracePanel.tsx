@@ -99,7 +99,7 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
       </div>
       <pre
         ref={codeRef}
-        className="flex-1 overflow-auto bg-muted p-3 font-mono text-xs leading-relaxed text-foreground"
+        className="flex-1 overflow-auto bg-transparent p-3 font-mono text-xs leading-relaxed text-foreground"
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {result && (
