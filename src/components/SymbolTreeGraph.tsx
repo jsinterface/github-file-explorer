@@ -92,9 +92,122 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
   return { trees, labelToId, refsByExport };
 }
 
-export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode> }) {
+type RepoMeta = { owner: string; repo: string; branch: string };
+
+export function SymbolTreeGraph({
+  data,
+  repo,
+  inputJson,
+}: {
+  data: Record<string, SymbolTreeNode>;
+  repo?: RepoMeta | null;
+  inputJson?: string;
+}) {
   const ref = useRef<SVGSVGElement | null>(null);
   const built = useMemo(() => buildHierarchy(data), [data]);
+
+  type RunState = {
+    filePath: string;
+    trace: FunctionTrace;
+    step: number;
+    result: { ok: true; value: unknown } | { ok: false; error: string } | null;
+    sourceExportId: string;
+    edgeOrder: string[]; // ordered target export ids matching call sites
+  };
+  const [run, setRun] = useState<RunState | null>(null);
+  const runRef = useRef<RunState | null>(null);
+  runRef.current = run;
+  const stepTimerRef = useRef<number | null>(null);
+
+  const handleExportClick = useCallback(
+    async (exportId: string, exportKind: "function" | "value") => {
+      if (exportKind !== "function" || !repo) return;
+      // exportId = `export:<file>#<name>`
+      const m = exportId.match(/^export:(.+)#([^#]+)$/);
+      if (!m) return;
+      const filePath = m[1];
+      const exportName = m[2];
+
+      const refs = built.refsByExport.get(exportId) ?? [];
+      const refLabels = new Set(refs.map((r) => r.split(":").pop() ?? r));
+      const labelToTargetId = new Map<string, string>();
+      refs.forEach((label) => {
+        const tid = built.labelToId.get(label);
+        if (tid) labelToTargetId.set(label.split(":").pop() ?? label, tid);
+      });
+
+      try {
+        const source = await fetchRawFile(repo.owner, repo.repo, repo.branch, filePath);
+        const trace = analyzeFunctionInSource(source, filePath, exportName, refLabels);
+        if (!trace) {
+          setRun({
+            filePath,
+            trace: { source, exportName, bodyStart: 0, bodyEnd: source.length, callSites: [] },
+            step: -1,
+            result: { ok: false, error: "Could not locate export in source." },
+            sourceExportId: exportId,
+            edgeOrder: [],
+          });
+          return;
+        }
+        const edgeOrder = trace.callSites
+          .map((cs) => labelToTargetId.get(cs.name))
+          .filter((x): x is string => Boolean(x));
+
+        // Try to execute against the JSON input.
+        let result: RunState["result"] = null;
+        try {
+          const data = inputJson?.trim() ? JSON.parse(inputJson) : undefined;
+          const mod = await loadModuleFromSource(source, filePath);
+          const fn = mod[exportName];
+          if (typeof fn !== "function") {
+            result = { ok: false, error: `Export "${exportName}" is not a callable function (got ${typeof fn}).` };
+          } else {
+            const value = await (fn as (...a: unknown[]) => unknown)(data);
+            result = { ok: true, value };
+          }
+        } catch (e) {
+          result = {
+            ok: false,
+            error: e instanceof Error ? e.message : String(e),
+          };
+        }
+
+        // Animate the step pointer through call sites.
+        if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
+        const total = trace.callSites.length;
+        setRun({ filePath, trace, step: total > 0 ? 0 : -1, result, sourceExportId: exportId, edgeOrder });
+        if (total > 1) {
+          let i = 0;
+          stepTimerRef.current = window.setInterval(() => {
+            i++;
+            if (i >= total) {
+              if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
+              stepTimerRef.current = null;
+              return;
+            }
+            setRun((prev) => (prev ? { ...prev, step: i } : prev));
+          }, 700);
+        }
+      } catch (e) {
+        setRun({
+          filePath,
+          trace: { source: "", exportName, bodyStart: 0, bodyEnd: 0, callSites: [] },
+          step: -1,
+          result: { ok: false, error: e instanceof Error ? e.message : String(e) },
+          sourceExportId: exportId,
+          edgeOrder: [],
+        });
+      }
+    },
+    [repo, inputJson, built],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!ref.current) return;
