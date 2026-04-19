@@ -260,7 +260,7 @@ function Index() {
       {/* Floating pill-shaped form at the bottom */}
       <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-end gap-2 px-4">
         {(view === "symbolTree" && symbolGraph) || (loading && progress) || error || result ? (
-          <div className="pointer-events-auto inline-flex w-auto max-w-full flex-col items-end gap-1 self-end rounded-2xl border border-border px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md" style={{ background: "color-mix(in oklab, var(--surface-elevated) 80%, transparent)" }}>
+          <div className="pointer-events-auto inline-flex w-auto max-w-full flex-col items-end gap-1 self-end px-2 py-1 text-xs text-muted-foreground">
             {view === "symbolTree" && symbolGraph && (
               <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
                 <span className="flex items-center gap-1.5">
