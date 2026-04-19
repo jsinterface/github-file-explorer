@@ -82,9 +82,8 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const { trees, labelToId, refsByExport } = built;
     if (trees.length === 0) return;
 
-    const size = 960;
-    const cx = size / 2;
-    const cy = size / 2;
+    const cx = 0;
+    const cy = 0;
 
     // Hierarchies for each top-level tree, with leaves counted to allocate
     // angular width proportional to leaf count.
@@ -92,12 +91,15 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const leafCounts = hierarchies.map((h) => Math.max(1, h.leaves().length));
     const totalLeaves = leafCounts.reduce((a, b) => a + b, 0);
 
-    // Inner ring = export leaves; outer ring = top-level folder/file roots.
-    // Scale inner radius so each leaf gets at least ~MIN_ARC_PER_LEAF px of arc.
+    // Scale ring radii based on leaf density: each leaf gets ~MIN_ARC_PER_LEAF
+    // arc length on the inner ring, and the outer ring grows proportionally.
     const MIN_ARC_PER_LEAF = 14;
-    const outerR = size / 2 - 60;
+    const BASE_INNER = 120;
+    const BASE_OUTER = 420;
     const densityInnerR = (totalLeaves * MIN_ARC_PER_LEAF) / (2 * Math.PI);
-    const innerR = Math.max(120, Math.min(outerR - 80, densityInnerR));
+    const innerR = Math.max(BASE_INNER, densityInnerR);
+    const outerR = innerR + (BASE_OUTER - BASE_INNER);
+    const size = (outerR + 60) * 2;
 
     // Small angular gap between adjacent top-level trees.
     const gap = trees.length > 1 ? 0.012 : 0;
