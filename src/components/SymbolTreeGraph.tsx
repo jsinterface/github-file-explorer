@@ -94,7 +94,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const colWidth = Math.max(28, Math.min(80, 1400 / leafCount));
     const rowHeight = 90;
 
-    const marginTop = 40; // top space for reference arcs
+    const marginTop = 240; // generous top space for tall reference arcs
     const marginBottom = 40;
     const marginLeft = 40;
     const marginRight = 40;
@@ -227,14 +227,15 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     }
 
     // Bezier path: arcs upward (above export row) so they don't tangle with the tree.
-    // Exports are at y ≈ 0 (top). Use negative control-y to bow up.
+    // Longer horizontal pull on control points + larger lift = taller, sweeping arches.
     function bezierPath(p: RefPair): string {
       const dx = p.tx - p.sx;
       const dist = Math.abs(dx);
-      const lift = Math.min(marginTop * 0.9, 20 + dist * 0.35);
-      const c1x = p.sx;
+      const lift = Math.min(marginTop * 0.95, 80 + dist * 0.9);
+      const pull = Math.max(60, dist * 0.45);
+      const c1x = p.sx + Math.sign(dx || 1) * pull;
       const c1y = p.sy - lift;
-      const c2x = p.tx;
+      const c2x = p.tx - Math.sign(dx || 1) * pull;
       const c2y = p.ty - lift;
       return `M${p.sx},${p.sy} C${c1x},${c1y} ${c2x},${c2y} ${p.tx},${p.ty}`;
     }
