@@ -122,11 +122,30 @@ export function SymbolTreeGraph({
     speedRef.current = speed;
   }, [speed]);
   const BASE_STEP_MS = 1500;
-  const stepMs = () => BASE_STEP_MS / speedRef.current;
-  const sleep = (ms: number) =>
+  // Sleep one "step" worth of time, re-rated continuously based on current speed.
+  // speed=0 pauses (waits until speed > 0 or cancellation).
+  const sleep = (_ms?: number) =>
     new Promise<void>((resolve) => {
-      window.setTimeout(resolve, ms);
+      let remaining = BASE_STEP_MS; // remaining "scaled" ms to consume
+      let last = performance.now();
+      const tick = (now: number) => {
+        if (cancelRef.current.cancelled) {
+          resolve();
+          return;
+        }
+        const dt = now - last;
+        last = now;
+        const s = speedRef.current;
+        if (s > 0) remaining -= dt * s;
+        if (remaining <= 0) {
+          resolve();
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
     });
+  const stepMs = () => BASE_STEP_MS;
 
   // Build a Frame for a given export id. Fetches source, builds trace, and aligns edgeOrder.
   // Returns null if the export cannot be located or has no animatable refs.
@@ -973,14 +992,19 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = BASE_STEP_MS / speedRef.current; // matches stepMs()
-      const start = performance.now();
+      // Track elapsed "scaled" progress so changing speed mid-animation re-rates smoothly.
+      // At speed s, progress per real ms = s / BASE_STEP_MS. Speed 0 → no progress (paused).
+      let progress = 0; // 0..1
+      let last = performance.now();
       const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const pt = animPath.getPointAtLength(t * animLen);
+        const dt = now - last;
+        last = now;
+        const s = speedRef.current;
+        if (s > 0) progress = Math.min(1, progress + (dt * s) / BASE_STEP_MS);
+        const pt = animPath.getPointAtLength(progress * animLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
-        if (t < 1) {
+        if (progress < 1) {
           travelerRafRef.current = requestAnimationFrame(tick);
         } else {
           travelerRafRef.current = null;
@@ -1028,7 +1052,7 @@ export function SymbolTreeGraph({
                 <span className="text-muted-foreground">speed</span>
                 <input
                   type="range"
-                  min={0.25}
+                  min={0}
                   max={4}
                   step={0.25}
                   value={speed}
