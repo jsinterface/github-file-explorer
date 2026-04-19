@@ -426,8 +426,8 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     // ---------- Nodes ----------
     // Distinct colors per export kind: functions vs values.
-    const FUNCTION_COLOR = "var(--color-chart-3)";
-    const VALUE_COLOR = "var(--color-chart-4)";
+    const FUNCTION_COLOR = "#304ffe";
+    const VALUE_COLOR = "#ffff00";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-chart-2)";
