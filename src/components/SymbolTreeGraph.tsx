@@ -978,7 +978,7 @@ export function SymbolTreeGraph({
       );
       if (targetText) {
         targetText.style.filter =
-          "drop-shadow(0 0 4px #22ff88) drop-shadow(0 0 10px #22ff88)";
+          "drop-shadow(0 0 4px #c084fc) drop-shadow(0 0 10px #a855f7)";
       }
     }
 
