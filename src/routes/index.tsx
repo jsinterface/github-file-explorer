@@ -348,7 +348,11 @@ function Index() {
               </pre>
             )}
             {view === "symbolTree" && symbolGraph && (
-              <SymbolTreeGraph data={symbolGraphToTree(symbolGraph)} />
+              <SymbolTreeGraph
+                data={symbolGraphToTree(symbolGraph)}
+                repo={repoMeta}
+                inputJson={inputJson}
+              />
             )}
           </div>
         )}
