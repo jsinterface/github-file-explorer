@@ -660,7 +660,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         return flip ? "end" : "start";
       })
       .attr("dx", (d) => {
-        const r = radiusFor(d.node.data) + 3;
+        const r = radiusFor(d.node.data) + 8;
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
         return flip ? -r : r;
       })
