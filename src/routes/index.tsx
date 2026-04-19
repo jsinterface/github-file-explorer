@@ -285,7 +285,7 @@ function Index() {
                   referenced
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block h-3 w-0.5" style={{ background: "#536dfe" }} />
+                  <span className="inline-block h-3 w-0.5" style={{ background: "#6d4c41" }} />
                   referencing
                 </span>
               </>
