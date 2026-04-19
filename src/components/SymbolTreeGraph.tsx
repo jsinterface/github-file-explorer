@@ -814,10 +814,21 @@ export function SymbolTreeGraph({
   }, [built, handleExportClick]);
 
   // Animate the highlighted edge as the trace step advances.
+  // Active edge gets a steady glowing-green node traveling along it (no edge glow).
+  const travelerRafRef = useRef<number | null>(null);
   useEffect(() => {
     const svg = ref.current;
     if (!svg) return;
     const paths = svg.querySelectorAll<SVGPathElement>("path[data-src]");
+
+    // Stop any existing traveler animation
+    if (travelerRafRef.current !== null) {
+      cancelAnimationFrame(travelerRafRef.current);
+      travelerRafRef.current = null;
+    }
+    // Remove any existing traveler node
+    svg.querySelectorAll(".edge-traveler").forEach((n) => n.remove());
+
     if (!run) {
       paths.forEach((p) => {
         p.style.stroke = "";
@@ -829,6 +840,8 @@ export function SymbolTreeGraph({
     }
     const activeTarget = run.step >= 0 ? run.edgeOrder[run.step] : null;
     const visited = new Set(run.edgeOrder.slice(0, Math.max(0, run.step)));
+
+    let activePath: SVGPathElement | null = null;
     paths.forEach((p) => {
       const src = p.getAttribute("data-src");
       const tgt = p.getAttribute("data-tgt");
@@ -840,10 +853,12 @@ export function SymbolTreeGraph({
         return;
       }
       if (tgt === activeTarget) {
-        p.style.stroke = "#ffff00";
-        p.style.strokeWidth = "2.5";
-        p.style.strokeOpacity = "1";
-        p.style.filter = "drop-shadow(0 0 4px #ffff00)";
+        // No edge glow; just keep the edge slightly emphasized so user sees the path.
+        p.style.stroke = "";
+        p.style.strokeWidth = "1.2";
+        p.style.strokeOpacity = "0.9";
+        p.style.filter = "";
+        activePath = p;
       } else if (tgt && visited.has(tgt)) {
         p.style.stroke = "#536dfe";
         p.style.strokeWidth = "1.4";
@@ -856,6 +871,43 @@ export function SymbolTreeGraph({
         p.style.filter = "";
       }
     });
+
+    // Spawn the green traveler on the active path
+    if (activePath) {
+      const path = activePath as SVGPathElement;
+      const totalLen = path.getTotalLength();
+      const ns = "http://www.w3.org/2000/svg";
+      const traveler = document.createElementNS(ns, "circle");
+      traveler.setAttribute("class", "edge-traveler");
+      traveler.setAttribute("r", "4");
+      traveler.setAttribute("fill", "#22ff88");
+      traveler.setAttribute("stroke", "#22ff88");
+      traveler.setAttribute("stroke-width", "0.5");
+      traveler.style.filter = "drop-shadow(0 0 6px #22ff88) drop-shadow(0 0 12px #22ff88)";
+      traveler.style.pointerEvents = "none";
+      // Append to the SVG so it sits in the same coord space as the paths.
+      // Paths live inside the zoom container, so append to the path's parent <g>.
+      path.parentNode?.appendChild(traveler);
+
+      const duration = 1400; // steady, slow travel
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = ((now - start) % duration) / duration;
+        const pt = path.getPointAtLength(t * totalLen);
+        traveler.setAttribute("cx", String(pt.x));
+        traveler.setAttribute("cy", String(pt.y));
+        travelerRafRef.current = requestAnimationFrame(tick);
+      };
+      travelerRafRef.current = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      if (travelerRafRef.current !== null) {
+        cancelAnimationFrame(travelerRafRef.current);
+        travelerRafRef.current = null;
+      }
+      svg.querySelectorAll(".edge-traveler").forEach((n) => n.remove());
+    };
   }, [run]);
 
   const refCount = Array.from(built.refsByExport.values()).reduce((a, b) => a + b.length, 0);
