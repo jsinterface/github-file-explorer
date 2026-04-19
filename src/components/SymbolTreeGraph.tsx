@@ -317,6 +317,7 @@ export function SymbolTreeGraph({
       // Cancel any previous animation.
       cancelRef.current.cancelled = true;
       cancelRef.current = { cancelled: false };
+      skipStackRef.current = [];
       setStack([]);
       await animateFrame(exportId, new Set(), true);
     },
