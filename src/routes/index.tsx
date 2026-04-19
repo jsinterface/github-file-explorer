@@ -282,6 +282,23 @@ function Index() {
           </Button>
         </form>
 
+        {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
+          <div className="mt-3">
+            <Label htmlFor="input-json" className="mb-1.5 block">
+              Input JSON (passed as the first argument when you click a function)
+            </Label>
+            <textarea
+              id="input-json"
+              value={inputJson}
+              onChange={(e) => setInputJson(e.target.value)}
+              spellCheck={false}
+              className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              rows={4}
+              placeholder='{"name": "world"}'
+            />
+          </div>
+        )}
+
         {loading && progress && (
           <div className="mt-6 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
             {progress}
