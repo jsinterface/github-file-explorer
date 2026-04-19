@@ -412,7 +412,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#536dfe");
+      .attr("fill", "var(--ref-in-color)");
 
     const refSel = container
       .append("g")
@@ -440,7 +440,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     // ---------- Nodes ----------
     // Distinct colors per export kind: functions vs values.
-    const FUNCTION_COLOR = "#536dfe";
+    const FUNCTION_COLOR = "var(--ref-in-color)";
     const VALUE_COLOR = "#ffff00";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
@@ -583,7 +583,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
           const tId = p.t.node.data.id;
           // Outgoing from a target = referenced edge; incoming to a target = referencing edge.
           if (targetIds.has(sId)) return "#ffff00";
-          if (targetIds.has(tId)) return "#536dfe";
+          if (targetIds.has(tId)) return "var(--ref-in-color)";
           return "#ffff00";
         })
         .attr("stroke-opacity", (p) => {
@@ -710,7 +710,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "#536dfe" }}
+            style={{ background: "var(--ref-in-color)" }}
           />
           function
         </span>
