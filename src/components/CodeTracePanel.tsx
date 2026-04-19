@@ -66,24 +66,13 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
         .ref-visited { background: color-mix(in oklab, #536dfe 25%, transparent); }
         .ref-active { background: #ffff00; color: #000; box-shadow: 0 0 0 2px #536dfe; }
       `}</style>
-      <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
-        <div className="truncate font-mono">
-          <span className="text-muted-foreground">{filePath}</span>
-          <span className="px-1 text-muted-foreground">·</span>
-          <span className="font-semibold">{trace.exportName}()</span>
-          <span className="px-1 text-muted-foreground">·</span>
-          <span className="text-muted-foreground">
-            step {Math.max(0, step + 1)}/{trace.callSites.length}
-          </span>
-        </div>
-        <button
-          className="text-muted-foreground hover:text-foreground"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          ✕
-        </button>
-      </div>
+      <button
+        className="absolute right-2 top-2 z-10 text-xs text-muted-foreground hover:text-foreground"
+        onClick={onClose}
+        aria-label="Close"
+      >
+        ✕
+      </button>
       <pre
         ref={codeRef}
         className="flex-1 overflow-auto bg-transparent p-3 font-mono text-xs leading-relaxed text-foreground"
