@@ -34,6 +34,20 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
       .on("zoom", (event) => container.attr("transform", event.transform.toString()));
     svg.call(zoomBehavior);
 
+    svg
+      .append("defs")
+      .append("marker")
+      .attr("id", "arrow-sym")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 100)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-border)");
+
     const link = container
       .append("g")
       .attr("stroke", "var(--color-border)")
@@ -41,9 +55,11 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
       .selectAll("line")
       .data(links)
       .join("line")
-      .attr("stroke-width", 0.8);
+      .attr("stroke-width", 0.8)
+      .attr("marker-end", "url(#arrow-sym)");
 
     const node = container
+      .filter((d) => d.kind !== "folder")
       .append("g")
       .selectAll<SVGGElement, SimNode>("g")
       .data(nodes)
