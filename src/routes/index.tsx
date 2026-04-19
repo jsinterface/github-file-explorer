@@ -352,7 +352,13 @@ function Index() {
           </Select>
           {(view === "symbolTree" || view === "symbols") && (
             <div className="flex items-center font-mono text-xs text-muted-foreground">
-              <span className="select-none pl-1 pr-0.5 text-2xl leading-none">(</span>
+              <button
+                type="submit"
+                aria-label="Submit"
+                className="select-none border-0 bg-transparent pl-1 pr-0.5 text-2xl leading-none text-muted-foreground hover:cursor-pointer focus:outline-none"
+              >
+                (
+              </button>
               {inputArgs.map((arg, i) => {
                 const placeholder = '{"name":"world"}';
                 const display = arg.length > 0 ? arg : placeholder;
