@@ -282,9 +282,8 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("title")
       .text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
 
-    // Labels: outward for outer (folders/files) and inward-radial for exports.
+    // All labels point radially outward (away from the chart center).
     node
-      .filter((d) => d.node.data.kind === "export")
       .append("text")
       .attr("transform", (d) => {
         const deg = (d.angle * 180) / Math.PI;
@@ -296,32 +295,17 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         return flip ? "end" : "start";
       })
       .attr("dx", (d) => {
+        const r = radiusFor(d.node.data.kind) + 3;
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
-        return flip ? -5 : 5;
+        return flip ? -r : r;
       })
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", 7)
+      .attr("font-size", (d) =>
+        d.node.data.kind === "folder" ? 9 : d.node.data.kind === "file" ? 8 : 7,
+      )
       .attr("fill", "var(--color-foreground)")
       .text((d) => d.node.data.name);
-
-    // For folders/files (outer side): place label radially outward.
-    node
-      .filter((d) => d.node.data.kind !== "export")
-      .append("text")
-      .attr("transform", (d) => {
-        const deg = (d.angle * 180) / Math.PI;
-        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
-        return flip ? `rotate(${deg + 180})` : `rotate(${deg})`;
-      })
-      .attr("text-anchor", (d) => {
-        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
-        return flip ? "start" : "end";
-      })
-      .attr("dx", (d) => {
-        const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
-        return flip ? 6 : -6;
-      })
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
       .attr("font-size", (d) => (d.node.data.kind === "folder" ? 9 : 8))
