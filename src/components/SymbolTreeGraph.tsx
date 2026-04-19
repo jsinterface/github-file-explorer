@@ -36,10 +36,12 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
   trees: RawNode[];
   labelToId: Map<string, string>;
   refsByExport: Map<string, string[]>;
+  kindById: Map<string, "function" | "value">;
 } {
   const trees: RawNode[] = [];
   const labelToId = new Map<string, string>();
   const refsByExport = new Map<string, string[]>();
+  const kindById = new Map<string, "function" | "value">();
 
   function build(obj: Record<string, SymbolTreeNode>, pathParts: string[]): RawNode[] {
     const out: RawNode[] = [];
@@ -64,6 +66,7 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
           });
           labelToId.set(`${shortFile}:${exportName}`, exportId);
           refsByExport.set(exportId, leaf.refs);
+          kindById.set(exportId, leaf.kind);
         }
         out.push(fileNode);
       } else {
@@ -79,7 +82,7 @@ function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
   }
 
   trees.push(...build(tree, []));
-  return { trees, labelToId, refsByExport };
+  return { trees, labelToId, refsByExport, kindById };
 }
 
 type RepoMeta = { owner: string; repo: string; branch: string };
@@ -142,9 +145,17 @@ export function SymbolTreeGraph({
           });
           return;
         }
-        const edgeOrder = trace.callSites
-          .map((cs) => labelToTargetId.get(cs.name))
-          .filter((x): x is string => Boolean(x));
+        // Build edgeOrder aligned with call sites, then filter out value-target refs from animation.
+        const filteredCallSites: typeof trace.callSites = [];
+        const edgeOrder: string[] = [];
+        for (const cs of trace.callSites) {
+          const tid = labelToTargetId.get(cs.name);
+          if (!tid) continue;
+          if (built.kindById.get(tid) !== "function") continue;
+          filteredCallSites.push(cs);
+          edgeOrder.push(tid);
+        }
+        trace.callSites = filteredCallSites;
 
         // Try to execute against the JSON input.
         let result: RunState["result"] = null;
