@@ -383,8 +383,22 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#ffff00")
-      .attr("fill-opacity", 0.04);
+      .attr("fill", "var(--color-border)")
+      .attr("fill-opacity", 0.6);
+
+    // Arrow marker for default (no hover) reference edges, matches file edge color.
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-default")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-border)");
 
     // Arrow marker for incoming highlighted edges (inverse color).
     defs
@@ -403,14 +417,14 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "#ffff00")
+      .attr("stroke", "var(--color-border)")
       .attr("stroke-width", 0.7)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
       .join("path")
       .attr("d", refPath)
-      .attr("stroke-opacity", 0.4)
-      .attr("marker-end", "url(#arrow-ref-full)");
+      .attr("stroke-opacity", 1)
+      .attr("marker-end", "url(#arrow-ref-default)");
 
     // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
     const outgoingByExport = new Map<string, Set<string>>();
@@ -589,9 +603,9 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
-        .attr("stroke", "#ffff00")
-        .attr("stroke-opacity", 0.4)
-        .attr("marker-end", "url(#arrow-ref-full)");
+        .attr("stroke", "var(--color-border)")
+        .attr("stroke-opacity", 1)
+        .attr("marker-end", "url(#arrow-ref-default)");
       node.style("opacity", FULL);
     }
 
@@ -700,7 +714,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-0.5"
-            style={{ background: "#ffff00" }}
+            style={{ background: "var(--color-border)" }}
           />
           reference
         </span>
