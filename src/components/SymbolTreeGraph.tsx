@@ -694,6 +694,7 @@ export function SymbolTreeGraph({
       .data(placed)
       .join("g")
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
+      .attr("data-node-id", (d) => d.node.data.id)
       .style("cursor", "pointer");
 
     const DIM = 0.04;
@@ -845,6 +846,10 @@ export function SymbolTreeGraph({
     }
     // Remove any existing traveler node
     svg.querySelectorAll(".edge-traveler").forEach((n) => n.remove());
+    // Clear any prior label glow
+    svg.querySelectorAll<SVGTextElement>("g[data-node-id] text").forEach((t) => {
+      t.style.filter = "";
+    });
 
     if (!run) {
       paths.forEach((p) => {
@@ -880,6 +885,17 @@ export function SymbolTreeGraph({
         p.style.strokeOpacity = "0.4";
       }
     });
+
+    // Glow the active target's label so the user sees which symbol is being called.
+    if (activeTarget && !run.completed) {
+      const targetText = svg.querySelector<SVGTextElement>(
+        `g[data-node-id="${CSS.escape(activeTarget)}"] text`,
+      );
+      if (targetText) {
+        targetText.style.filter =
+          "drop-shadow(0 0 4px #22ff88) drop-shadow(0 0 10px #22ff88)";
+      }
+    }
 
     // Spawn the green traveler — full circular loop per step:
     // forward along the chord (source -> target), then a bezier arc
@@ -965,6 +981,9 @@ export function SymbolTreeGraph({
         travelerRafRef.current = null;
       }
       svg.querySelectorAll(".edge-traveler").forEach((n) => n.remove());
+      svg.querySelectorAll<SVGTextElement>("g[data-node-id] text").forEach((t) => {
+        t.style.filter = "";
+      });
     };
   }, [run]);
 
