@@ -338,7 +338,7 @@ function Index() {
             disabled={loading}
           />
           <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
-            <SelectTrigger className="w-[160px] rounded-full border-0 bg-[#1a1a1a] text-foreground shadow-none focus:ring-0">
+            <SelectTrigger className="w-[160px] rounded-full border-0 bg-transparent text-foreground shadow-none focus:ring-0">
               <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent className="border-border bg-[#1a1a1a] text-foreground">
