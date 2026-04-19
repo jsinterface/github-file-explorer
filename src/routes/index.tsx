@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
+
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -258,16 +258,16 @@ function Index() {
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background p-4">
         <form
           onSubmit={handleSubmit}
-          className="mx-auto flex max-w-4xl items-end gap-3"
+          className="mx-auto flex max-w-4xl items-center gap-3"
         >
-          <div className="flex-1">
-            <Input
-              id="repo"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="owner/name or https://github.com/owner/name"
-            />
-          </div>
+          <Input
+            id="repo"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="owner/name or https://github.com/owner/name"
+            className="flex-1"
+            disabled={loading}
+          />
           <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="View" />
@@ -282,15 +282,18 @@ function Index() {
               <SelectItem value="symbolTree">Symbol Tree</SelectItem>
             </SelectContent>
           </Select>
-          <Button type="submit" disabled={loading}>
-            {loading
-              ? "Loading…"
-              : view === "imports"
-                ? "Analyze imports"
-              : view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree"
-                  ? "Analyze symbols"
-                  : "Fetch tree"}
-          </Button>
+          {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
+            <Input
+              id="input-json"
+              value={inputJson}
+              onChange={(e) => setInputJson(e.target.value)}
+              spellCheck={false}
+              className="flex-1 font-mono text-xs"
+              placeholder='Input JSON: {"name": "world"}'
+            />
+          )}
+          {/* Hidden submit so Enter key triggers form submission */}
+          <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
           <ThemeToggle />
         </form>
 
@@ -325,20 +328,6 @@ function Index() {
               </>
             )}
             {result.truncated && " · truncated"}
-          </div>
-        )}
-
-        {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
-          <div className="mx-auto mt-3 max-w-4xl">
-            <textarea
-              id="input-json"
-              value={inputJson}
-              onChange={(e) => setInputJson(e.target.value)}
-              spellCheck={false}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              rows={2}
-              placeholder='Input JSON: {"name": "world"}'
-            />
           </div>
         )}
       </div>
