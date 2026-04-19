@@ -1,22 +1,34 @@
 import { useEffect, useRef, useMemo } from "react";
 import * as d3 from "d3";
 
+export type SymbolLeaf = {
+  kind: "function" | "value";
+  refs: string[];
+};
 export type SymbolTreeNode =
   | { [key: string]: SymbolTreeNode }
-  | Record<string, string[]>;
+  | Record<string, SymbolLeaf>;
 
 type RawNode = {
   id: string;
   name: string;
   kind: "folder" | "file" | "export";
+  exportKind?: "function" | "value";
   children?: RawNode[];
 };
 
-function isExportLeaf(v: unknown): v is Record<string, string[]> {
+function isExportLeaf(v: unknown): v is Record<string, SymbolLeaf> {
   if (!v || typeof v !== "object") return false;
   const vals = Object.values(v as Record<string, unknown>);
   if (vals.length === 0) return false;
-  return vals.every((x) => Array.isArray(x));
+  return vals.every(
+    (x) =>
+      x !== null &&
+      typeof x === "object" &&
+      "kind" in (x as object) &&
+      "refs" in (x as object) &&
+      Array.isArray((x as { refs: unknown }).refs),
+  );
 }
 
 function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
