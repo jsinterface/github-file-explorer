@@ -257,9 +257,9 @@ function Index() {
       {/* Floating pill-shaped form at the bottom */}
       <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-end gap-2 px-4">
         {(view === "symbolTree" && symbolGraph) || (loading && progress) || error || result ? (
-          <div className="pointer-events-auto inline-flex w-auto max-w-full items-center gap-x-3 gap-y-1 self-end rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+          <div className="pointer-events-auto inline-flex w-auto max-w-full flex-col items-end gap-1 self-end rounded-2xl border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
             {view === "symbolTree" && symbolGraph && (
-              <>
+              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
                   folder
@@ -288,35 +288,36 @@ function Index() {
                   <span className="inline-block h-3 w-0.5" style={{ background: "#6d4c41" }} />
                   referencing
                 </span>
-              </>
+              </div>
             )}
-            {(view === "symbolTree" && symbolGraph) && (loading && progress || error || result) && (
-              <span className="mx-1 h-3 w-px bg-border" />
-            )}
-            {loading && progress ? (
-              <span>{progress}</span>
-            ) : error ? (
-              <span className="text-destructive">{error}</span>
-            ) : result ? (
-              <>
-                <span>
-                  <span className="font-mono">{result.repo}</span> · branch{" "}
-                  <span className="font-mono">{result.branch}</span>
-                </span>
-                {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
-                  <span>· {result.items.length} entries</span>
-                )}
-                {view === "imports" && importGraph && (
-                  <span>· {importGraph.fileCount} source files</span>
-                )}
-                {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
-                  <span>
-                    · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
-                    {symbolGraph.links.length} refs
-                  </span>
-                )}
-                {result.truncated && <span>· truncated</span>}
-              </>
+            {(loading && progress) || error || result ? (
+              <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                {loading && progress ? (
+                  <span>{progress}</span>
+                ) : error ? (
+                  <span className="text-destructive">{error}</span>
+                ) : result ? (
+                  <>
+                    <span>
+                      <span className="font-mono">{result.repo}</span> · branch{" "}
+                      <span className="font-mono">{result.branch}</span>
+                    </span>
+                    {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+                      <span>· {result.items.length} entries</span>
+                    )}
+                    {view === "imports" && importGraph && (
+                      <span>· {importGraph.fileCount} source files</span>
+                    )}
+                    {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+                      <span>
+                        · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                        {symbolGraph.links.length} refs
+                      </span>
+                    )}
+                    {result.truncated && <span>· truncated</span>}
+                  </>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}
