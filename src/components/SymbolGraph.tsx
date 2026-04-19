@@ -62,7 +62,6 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
       .append("g")
       .selectAll<SVGGElement, SimNode>("g")
       .data(nodes)
-      .filter((d) => d.kind !== "folder")
       .join("g")
       .style("cursor", "grab");
 
