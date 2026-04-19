@@ -509,7 +509,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     container
       .append("g")
-      .attr("font-family", "ui-monospace, monospace")
+      .attr("font-family", "\"Averia Serif Libre\", ui-monospace, monospace")
       .attr("fill", "white")
       .attr("stroke", "black")
       .attr("stroke-width", 2)
@@ -664,7 +664,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         return flip ? -r : r;
       })
       .attr("dy", "0.32em")
-      .attr("font-family", "ui-monospace, monospace")
+      .attr("font-family", "\"Averia Serif Libre\", ui-monospace, monospace")
       .attr("font-size", (d) => nodeFontSizeFor(d.radius))
       .attr("fill", "white")
       .attr("stroke", "black")
