@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { analyzeFunctionInSource, fetchRawFile, loadModuleFromSource, type FunctionTrace } from "@/lib/runFunction";
 import { CodeTracePanel } from "./CodeTracePanel";
 
@@ -115,6 +116,7 @@ export function SymbolTreeGraph({
 
   // Animation speed multiplier: higher = faster. 1 = base 1500ms per step.
   const [speed, setSpeed] = useState(1);
+  const [stackExpanded, setStackExpanded] = useState(false);
   const speedRef = useRef(speed);
   useEffect(() => {
     speedRef.current = speed;
@@ -1115,71 +1117,98 @@ export function SymbolTreeGraph({
                 {speed.toFixed(2)}x
               </span>
             </div>
-            {stack.map((f, i) => {
-              const total = Math.max(1, f.edgeOrder.length);
-              const done = f.direction === "returning" ? f.step + 1 : f.step;
-              const pct = Math.max(0, Math.min(100, (done / total) * 100));
+            {(() => {
+              const visibleStart = stackExpanded ? 0 : Math.max(0, stack.length - 2);
+              const hidden = visibleStart;
+              return (
+                <>
+                  {stack.slice(visibleStart).map((f, idx) => {
+                    const i = visibleStart + idx;
+                    const total = Math.max(1, f.edgeOrder.length);
+                    const done = f.direction === "returning" ? f.step + 1 : f.step;
+                    const pct = Math.max(0, Math.min(100, (done / total) * 100));
 
-              // For non-root frames, copy the exact call expression text from the parent's source.
-              let callLabel = `${f.trace.exportName}()`;
-              if (i > 0) {
-                const parent = stack[i - 1];
-                const cs = parent.trace.callSites[parent.step];
-                const src = parent.trace.source;
-                if (cs && src) {
-                  // Extend from identifier end through the matching parenthesized argument list.
-                  let j = cs.end;
-                  while (j < src.length && /\s/.test(src[j])) j++;
-                  if (src[j] === "(") {
-                    let depth = 0;
-                    let inStr: string | null = null;
-                    let esc = false;
-                    let end = j;
-                    for (let k = j; k < src.length; k++) {
-                      const c = src[k];
-                      if (inStr) {
-                        if (esc) esc = false;
-                        else if (c === "\\") esc = true;
-                        else if (c === inStr) inStr = null;
-                      } else if (c === '"' || c === "'" || c === "`") {
-                        inStr = c;
-                      } else if (c === "(") depth++;
-                      else if (c === ")") {
-                        depth--;
-                        if (depth === 0) {
-                          end = k + 1;
-                          break;
+                    // For non-root frames, copy the exact call expression text from the parent's source.
+                    let callLabel = `${f.trace.exportName}()`;
+                    if (i > 0) {
+                      const parent = stack[i - 1];
+                      const cs = parent.trace.callSites[parent.step];
+                      const src = parent.trace.source;
+                      if (cs && src) {
+                        let j = cs.end;
+                        while (j < src.length && /\s/.test(src[j])) j++;
+                        if (src[j] === "(") {
+                          let depth = 0;
+                          let inStr: string | null = null;
+                          let esc = false;
+                          let end = j;
+                          for (let k = j; k < src.length; k++) {
+                            const c = src[k];
+                            if (inStr) {
+                              if (esc) esc = false;
+                              else if (c === "\\") esc = true;
+                              else if (c === inStr) inStr = null;
+                            } else if (c === '"' || c === "'" || c === "`") {
+                              inStr = c;
+                            } else if (c === "(") depth++;
+                            else if (c === ")") {
+                              depth--;
+                              if (depth === 0) {
+                                end = k + 1;
+                                break;
+                              }
+                            }
+                          }
+                          callLabel = src.slice(cs.start, end).replace(/\s+/g, " ").trim();
+                        } else {
+                          callLabel = src.slice(cs.start, cs.end);
                         }
                       }
                     }
-                    callLabel = src.slice(cs.start, end).replace(/\s+/g, " ").trim();
-                  } else {
-                    callLabel = src.slice(cs.start, cs.end);
-                  }
-                }
-              }
 
-              const fullCallLabel = callLabel;
-              const displayCallLabel =
-                callLabel.length > 50 ? callLabel.slice(0, 49) + "…" : callLabel;
+                    const fullCallLabel = callLabel;
+                    const displayCallLabel =
+                      callLabel.length > 50 ? callLabel.slice(0, 49) + "…" : callLabel;
 
-              return (
-                <div key={`${f.sourceExportId}-${i}`} className="flex flex-col gap-0.5">
-                  <div className="flex items-center justify-between gap-2 font-mono text-[10px]">
-                    <span className="truncate text-muted-foreground">{f.filePath}</span>
-                    <span className="shrink-0 font-semibold text-foreground" title={fullCallLabel}>
-                      {displayCallLabel}
-                    </span>
-                  </div>
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${pct}%`, background: "#536dfe" }}
-                    />
-                  </div>
-                </div>
+                    return (
+                      <div key={`${f.sourceExportId}-${i}`} className="flex flex-col gap-0.5">
+                        <div className="flex items-center justify-between gap-2 font-mono text-[10px]">
+                          <span className="truncate text-muted-foreground">{f.filePath}</span>
+                          <span className="shrink-0 font-semibold text-foreground" title={fullCallLabel}>
+                            {displayCallLabel}
+                          </span>
+                        </div>
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, background: "#536dfe" }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {stack.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setStackExpanded((v) => !v)}
+                      className="flex items-center justify-center gap-1 rounded font-mono text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      {stackExpanded ? (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          collapse
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          show {hidden} more
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
               );
-            })}
+            })()}
           </div>
         )}
         <svg
