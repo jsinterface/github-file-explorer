@@ -186,13 +186,16 @@ export function SymbolTreeGraph({
       let result: Frame["result"] = null;
       if (executeFn) {
         try {
-          const data = inputJson?.trim() ? JSON.parse(inputJson) : undefined;
+          // inputJson is a comma-joined list of JSON-encoded args; parse as an array and spread.
+          const args: unknown[] = inputJson?.trim()
+            ? (JSON.parse(`[${inputJson}]`) as unknown[])
+            : [];
           const mod = await loadModuleFromSource(source, filePath);
           const fn = mod[exportName];
           if (typeof fn !== "function") {
             result = { ok: false, error: `Export "${exportName}" is not a callable function (got ${typeof fn}).` };
           } else {
-            const value = await (fn as (...a: unknown[]) => unknown)(data);
+            const value = await (fn as (...a: unknown[]) => unknown)(...args);
             result = { ok: true, value };
           }
         } catch (e) {
