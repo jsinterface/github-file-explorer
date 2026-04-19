@@ -753,13 +753,6 @@ export function SymbolTreeGraph({
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
           return targetIds.has(sId) || targetIds.has(tId) ? FULL : DIM;
-        })
-        .attr("marker-end", (p) => {
-          const sId = p.s.node.data.id;
-          const tId = p.t.node.data.id;
-          if (targetIds.has(sId)) return "url(#arrow-ref-full)";
-          if (targetIds.has(tId)) return "url(#arrow-ref-in)";
-          return "url(#arrow-ref-dim)";
         });
       node.style("opacity", (n) => {
         const nid = n.node.data.id;
@@ -772,8 +765,7 @@ export function SymbolTreeGraph({
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
         .attr("stroke", "#555555")
-        .attr("stroke-opacity", 1)
-        .attr("marker-end", "url(#arrow-ref-default)");
+        .attr("stroke-opacity", 1);
       node.style("opacity", FULL);
     }
 
