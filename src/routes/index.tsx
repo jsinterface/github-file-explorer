@@ -294,6 +294,40 @@ function Index() {
           <ThemeToggle />
         </form>
 
+        {/* Status messages */}
+        {loading && progress && (
+          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-border bg-muted p-2 text-xs text-muted-foreground">
+            {progress}
+          </div>
+        )}
+
+        {error && (
+          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+            <span className="font-mono">{result.repo}</span> · branch{" "}
+            <span className="font-mono">{result.branch}</span>
+            {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+              <> · {result.items.length} entries</>
+            )}
+            {view === "imports" && importGraph && (
+              <> · {importGraph.fileCount} source files</>
+            )}
+            {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+              <>
+                {" "}
+                · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                {symbolGraph.links.length} refs
+              </>
+            )}
+            {result.truncated && " · truncated"}
+          </div>
+        )}
+
         {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
           <div className="mx-auto mt-3 max-w-4xl">
             <textarea
