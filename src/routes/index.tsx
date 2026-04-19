@@ -118,7 +118,7 @@ function Index() {
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
 
-      if (view === "imports" || view === "symbols") {
+      if (view === "imports" || view === "symbols" || view === "symbolsJson") {
         if (view === "imports") {
           const graph = await buildImportGraph(
             parsed.owner,
