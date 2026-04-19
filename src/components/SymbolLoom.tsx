@@ -202,27 +202,103 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
         return parts.slice(-2).join("/");
       });
 
-    // ---- Ribbons (bezier through center, attaching at inner edge of node band) ----
-    function ribbonPath(r: Ribbon): string {
-      const sx = cx + nodeInnerR * Math.cos(r.source.angle);
-      const sy = cy + nodeInnerR * Math.sin(r.source.angle);
-      const tx = cx + nodeInnerR * Math.cos(r.target.angle);
-      const ty = cy + nodeInnerR * Math.sin(r.target.angle);
-      return `M${sx},${sy} C${cx},${cy} ${cx},${cy} ${tx},${ty}`;
+    // ---- Chord ribbons with width proportional to source/target arcs ----
+    // Each ribbon takes a sub-arc on its source node sized as
+    //   sourceArcLength * (1 / outDegree(source))
+    // and a sub-arc on its target node sized as
+    //   targetArcLength * (1 / inDegree(target))
+    // so that the sum of sub-arcs at each endpoint exactly fills the node's arc.
+    const outCount = new Map<string, number>();
+    const inCount = new Map<string, number>();
+    for (const r of ribbons) {
+      outCount.set(r.source.id, (outCount.get(r.source.id) ?? 0) + 1);
+      inCount.set(r.target.id, (inCount.get(r.target.id) ?? 0) + 1);
+    }
+    // Track running offset into each node's arc as we lay ribbons out, separately
+    // for outgoing and incoming sides. We split each node's arc in half:
+    //   first half -> outgoing slots, second half -> incoming slots.
+    const outOffset = new Map<string, number>();
+    const inOffset = new Map<string, number>();
+
+    type ChordSeg = {
+      r: Ribbon;
+      sa0: number;
+      sa1: number;
+      ta0: number;
+      ta1: number;
+    };
+    const chords: ChordSeg[] = [];
+
+    // Sort ribbons so adjacent ones at a node tend to share endpoints (visual cleanliness)
+    const sortedRibbons = [...ribbons].sort((a, b) => a.target.angle - b.target.angle);
+
+    for (const r of sortedRibbons) {
+      const sArcLen = r.source.a1 - r.source.a0;
+      const tArcLen = r.target.a1 - r.target.a0;
+      const sShare = sArcLen / Math.max(1, outCount.get(r.source.id) ?? 1);
+      const tShare = tArcLen / Math.max(1, inCount.get(r.target.id) ?? 1);
+
+      const sStart = r.source.a0 + (outOffset.get(r.source.id) ?? 0);
+      const tStart = r.target.a0 + (inOffset.get(r.target.id) ?? 0);
+      outOffset.set(r.source.id, (outOffset.get(r.source.id) ?? 0) + sShare);
+      inOffset.set(r.target.id, (inOffset.get(r.target.id) ?? 0) + tShare);
+
+      chords.push({
+        r,
+        sa0: sStart,
+        sa1: sStart + sShare,
+        ta0: tStart,
+        ta1: tStart + tShare,
+      });
     }
 
-    container
+    // Build a chord-style ribbon path:
+    // arc along source (sa0->sa1) at innerR, bezier through center to target (ta1->ta0), close.
+    function chordPath(c: ChordSeg): string {
+      const r = nodeInnerR;
+      const s0x = cx + r * Math.cos(c.sa0);
+      const s0y = cy + r * Math.sin(c.sa0);
+      const s1x = cx + r * Math.cos(c.sa1);
+      const s1y = cy + r * Math.sin(c.sa1);
+      const t0x = cx + r * Math.cos(c.ta0);
+      const t0y = cy + r * Math.sin(c.ta0);
+      const t1x = cx + r * Math.cos(c.ta1);
+      const t1y = cy + r * Math.sin(c.ta1);
+      const sweepFlag = (c.sa1 - c.sa0) > Math.PI ? 1 : 0;
+      const tSweep = (c.ta1 - c.ta0) > Math.PI ? 1 : 0;
+      return [
+        `M${s0x},${s0y}`,
+        `A${r},${r} 0 ${sweepFlag} 1 ${s1x},${s1y}`,
+        `C${cx},${cy} ${cx},${cy} ${t1x},${t1y}`,
+        `A${r},${r} 0 ${tSweep} 1 ${t0x},${t0y}`,
+        `C${cx},${cy} ${cx},${cy} ${s0x},${s0y}`,
+        "Z",
+      ].join(" ");
+    }
+
+    const ribbonsBySource = new Map<string, ChordSeg[]>();
+    const ribbonsByTarget = new Map<string, ChordSeg[]>();
+    for (const c of chords) {
+      if (!ribbonsBySource.has(c.r.source.id)) ribbonsBySource.set(c.r.source.id, []);
+      if (!ribbonsByTarget.has(c.r.target.id)) ribbonsByTarget.set(c.r.target.id, []);
+      ribbonsBySource.get(c.r.source.id)!.push(c);
+      ribbonsByTarget.get(c.r.target.id)!.push(c);
+    }
+
+    const chordPaths = container
       .append("g")
-      .attr("fill", "none")
-      .attr("stroke", "var(--color-chart-3)")
-      .attr("stroke-opacity", 0.25)
-      .attr("stroke-width", 0.7)
-      .selectAll("path")
-      .data(ribbons)
+      .attr("class", "chords")
+      .selectAll<SVGPathElement, ChordSeg>("path")
+      .data(chords)
       .join("path")
-      .attr("d", ribbonPath)
-      .append("title")
-      .text((r) => `${r.source.label} → ${r.target.label}`);
+      .attr("d", chordPath)
+      .attr("fill", "var(--color-chart-3)")
+      .attr("fill-opacity", 0.18)
+      .attr("stroke", "var(--color-chart-3)")
+      .attr("stroke-opacity", 0.35)
+      .attr("stroke-width", 0.4);
+
+    chordPaths.append("title").text((c) => `${c.r.source.label} → ${c.r.target.label}`);
 
     // ---- Node arcs as part of the surrounding ring (scaled by indegree) ----
     const nodeArcGen = d3
@@ -236,9 +312,10 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
     const nodeG = container
       .append("g")
       .attr("transform", `translate(${cx}, ${cy})`)
-      .selectAll("g")
+      .selectAll<SVGGElement, Placed>("g")
       .data(placed)
-      .join("g");
+      .join("g")
+      .style("cursor", "pointer");
 
     nodeG
       .append("path")
@@ -250,6 +327,37 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       .attr("stroke-width", 0.4);
 
     nodeG.append("title").text((d) => `${d.label} · in:${d.indegree}`);
+
+    // ---- Hover highlighting ----
+    nodeG
+      .on("mouseenter", (_event, d) => {
+        const related = new Set<ChordSeg>();
+        for (const c of ribbonsBySource.get(d.id) ?? []) related.add(c);
+        for (const c of ribbonsByTarget.get(d.id) ?? []) related.add(c);
+        const partnerIds = new Set<string>([d.id]);
+        for (const c of related) {
+          partnerIds.add(c.r.source.id);
+          partnerIds.add(c.r.target.id);
+        }
+        chordPaths
+          .attr("fill-opacity", (c) => (related.has(c) ? 0.55 : 0.04))
+          .attr("stroke-opacity", (c) => (related.has(c) ? 0.8 : 0.05))
+          .attr("fill", (c) =>
+            related.has(c) ? "var(--color-primary)" : "var(--color-chart-3)",
+          )
+          .attr("stroke", (c) =>
+            related.has(c) ? "var(--color-primary)" : "var(--color-chart-3)",
+          );
+        nodeG.select("path").attr("opacity", (n) => (partnerIds.has((n as Placed).id) ? 1 : 0.25));
+      })
+      .on("mouseleave", () => {
+        chordPaths
+          .attr("fill", "var(--color-chart-3)")
+          .attr("stroke", "var(--color-chart-3)")
+          .attr("fill-opacity", 0.18)
+          .attr("stroke-opacity", 0.35);
+        nodeG.select("path").attr("opacity", 1);
+      });
 
     // ---- Node labels along the radial direction (only when arc is wide enough) ----
     const MIN_LABEL_ARC = 0.012; // radians
