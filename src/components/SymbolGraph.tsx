@@ -19,8 +19,38 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
     const width = 960;
     const height = 640;
 
-    const nodes: SimNode[] = data.nodes.map((n) => ({ ...n }));
-    const links: SimLink[] = data.links.map((l) => ({ ...l }));
+    // Compute degree, then drop unconnected nodes
+    const degree = new Map<string, number>();
+    const indegree = new Map<string, number>();
+    for (const l of data.links) {
+      const sId = typeof l.source === "string" ? l.source : (l.source as { id: string }).id;
+      const tId = typeof l.target === "string" ? l.target : (l.target as { id: string }).id;
+      degree.set(sId, (degree.get(sId) ?? 0) + 1);
+      degree.set(tId, (degree.get(tId) ?? 0) + 1);
+      indegree.set(tId, (indegree.get(tId) ?? 0) + 1);
+    }
+    const keep = new Set(
+      data.nodes.filter((n) => (degree.get(n.id) ?? 0) > 0).map((n) => n.id),
+    );
+
+    const nodes: SimNode[] = data.nodes
+      .filter((n) => keep.has(n.id))
+      .map((n) => ({ ...n }));
+    const links: SimLink[] = data.links
+      .filter((l) => {
+        const sId = typeof l.source === "string" ? l.source : (l.source as { id: string }).id;
+        const tId = typeof l.target === "string" ? l.target : (l.target as { id: string }).id;
+        return keep.has(sId) && keep.has(tId);
+      })
+      .map((l) => ({ ...l }));
+
+    const maxIn = Math.max(1, ...Array.from(indegree.values()));
+    const radiusFor = (id: string, kind: SimNode["kind"]) => {
+      const inDeg = indegree.get(id) ?? 0;
+      const base = kind === "function" ? 4 : 2.5;
+      // Scale by sqrt of indegree, normalized
+      return base + 10 * Math.sqrt(inDeg / maxIn);
+    };
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
@@ -69,14 +99,14 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
 
     node
       .append("circle")
-      .attr("r", (d) => (d.kind === "function" ? 4 : 2.5))
+      .attr("r", (d) => radiusFor(d.id, d.kind))
       .attr("fill", (d) =>
         d.kind === "function" ? "var(--color-chart-1)" : "var(--color-chart-2)",
       )
       .attr("stroke", "var(--color-background)")
       .attr("stroke-width", 0.8);
 
-    node.append("title").text((d) => d.label);
+    node.append("title").text((d) => `${d.label} · in:${indegree.get(d.id) ?? 0}`);
 
     // Only label function nodes to keep it readable
     node
