@@ -122,12 +122,30 @@ export function SymbolTreeGraph({
     speedRef.current = speed;
   }, [speed]);
   const BASE_STEP_MS = 1500;
-  const stepMs = () => (speedRef.current <= 0 ? Infinity : BASE_STEP_MS / speedRef.current);
-  const sleep = (ms: number) =>
+  // Sleep one "step" worth of time, re-rated continuously based on current speed.
+  // speed=0 pauses (waits until speed > 0 or cancellation).
+  const sleep = (_ms?: number) =>
     new Promise<void>((resolve) => {
-      if (!isFinite(ms)) return; // paused: never resolve until component cancels
-      window.setTimeout(resolve, ms);
+      let remaining = BASE_STEP_MS; // remaining "scaled" ms to consume
+      let last = performance.now();
+      const tick = (now: number) => {
+        if (cancelRef.current.cancelled) {
+          resolve();
+          return;
+        }
+        const dt = now - last;
+        last = now;
+        const s = speedRef.current;
+        if (s > 0) remaining -= dt * s;
+        if (remaining <= 0) {
+          resolve();
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
     });
+  const stepMs = () => BASE_STEP_MS;
 
   // Build a Frame for a given export id. Fetches source, builds trace, and aligns edgeOrder.
   // Returns null if the export cannot be located or has no animatable refs.
