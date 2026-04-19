@@ -886,6 +886,17 @@ export function SymbolTreeGraph({
       }
     });
 
+    // Glow the active target's label so the user sees which symbol is being called.
+    if (activeTarget && !run.completed) {
+      const targetText = svg.querySelector<SVGTextElement>(
+        `g[data-node-id="${CSS.escape(activeTarget)}"] text`,
+      );
+      if (targetText) {
+        targetText.style.filter =
+          "drop-shadow(0 0 4px #22ff88) drop-shadow(0 0 10px #22ff88)";
+      }
+    }
+
     // Spawn the green traveler — full circular loop per step:
     // forward along the chord (source -> target), then a bezier arc
     // returning OUTSIDE the symbol ring back to the source.
