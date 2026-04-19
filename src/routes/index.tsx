@@ -73,16 +73,44 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
 
 type ViewMode = "json" | "graph" | "imports" | "symbols" | "symbolsJson";
 
-function symbolGraphToRecord(g: SymbolGraph): Record<string, string[]> {
+type SymbolTreeNode =
+  | { [key: string]: SymbolTreeNode }
+  | Record<string, string[]>;
+
+function symbolGraphToTree(g: SymbolGraph): Record<string, SymbolTreeNode> {
   const idToLabel = new Map(g.nodes.map((n) => [n.id, n.label]));
-  const out: Record<string, string[]> = {};
-  for (const n of g.nodes) out[n.label] = [];
-  for (const l of g.links) {
-    const s = idToLabel.get(typeof l.source === "string" ? l.source : (l.source as { id: string }).id);
-    const t = idToLabel.get(typeof l.target === "string" ? l.target : (l.target as { id: string }).id);
-    if (s && t) out[s].push(t);
+  // Group nodes by file, collect referenced labels per export name
+  const perFile = new Map<string, Record<string, string[]>>();
+  for (const n of g.nodes) {
+    if (!perFile.has(n.file)) perFile.set(n.file, {});
+    perFile.get(n.file)![n.name] = [];
   }
-  return out;
+  for (const l of g.links) {
+    const sId = typeof l.source === "string" ? l.source : (l.source as { id: string }).id;
+    const tId = typeof l.target === "string" ? l.target : (l.target as { id: string }).id;
+    const sNode = g.nodes.find((n) => n.id === sId);
+    const tLabel = idToLabel.get(tId);
+    if (!sNode || !tLabel) continue;
+    perFile.get(sNode.file)?.[sNode.name]?.push(tLabel);
+  }
+
+  const root: Record<string, SymbolTreeNode> = {};
+  for (const [file, exportsMap] of perFile) {
+    const parts = file.split("/");
+    let cursor: Record<string, SymbolTreeNode> = root;
+    parts.forEach((name, idx) => {
+      const isLast = idx === parts.length - 1;
+      if (isLast) {
+        cursor[name] = exportsMap as SymbolTreeNode;
+      } else {
+        if (!cursor[name] || Array.isArray((cursor[name] as Record<string, unknown>))) {
+          cursor[name] = {};
+        }
+        cursor = cursor[name] as Record<string, SymbolTreeNode>;
+      }
+    });
+  }
+  return root;
 }
 
 function Index() {
