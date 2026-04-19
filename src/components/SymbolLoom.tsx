@@ -147,11 +147,11 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       .on("zoom", (event) => container.attr("transform", event.transform.toString()));
     svg.call(zoomBehavior);
 
-    // ---- File group arcs ----
+    // ---- File group arcs (outer band) ----
     const arcGen = d3
       .arc<{ a0: number; a1: number }>()
-      .innerRadius(ringR)
-      .outerRadius(ringR + 6)
+      .innerRadius(fileInnerR)
+      .outerRadius(fileOuterR)
       .startAngle((d) => d.a0 + Math.PI / 2)
       .endAngle((d) => d.a1 + Math.PI / 2);
 
