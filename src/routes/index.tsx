@@ -347,7 +347,7 @@ function Index() {
               <SelectItem value="symbols">Symbols</SelectItem>
               
               <SelectItem value="symbolsJson">References</SelectItem>
-              <SelectItem value="symbolTree">Symbol Tree</SelectItem>
+              <SelectItem value="symbolTree">Semantics</SelectItem>
             </SelectContent>
           </Select>
           {(view === "symbolTree" || view === "symbols") && (
