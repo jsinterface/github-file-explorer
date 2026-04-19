@@ -383,8 +383,22 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#ffff00")
-      .attr("fill-opacity", 0.04);
+      .attr("fill", "var(--color-border)")
+      .attr("fill-opacity", 0.6);
+
+    // Arrow marker for default (no hover) reference edges, matches file edge color.
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-default")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-border)");
 
     // Arrow marker for incoming highlighted edges (inverse color).
     defs
