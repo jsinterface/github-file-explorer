@@ -245,16 +245,17 @@ function Index() {
             <div className="mb-3 text-xs text-muted-foreground">
               <span className="font-mono">{result.repo}</span> · branch{" "}
               <span className="font-mono">{result.branch}</span>
-              {view !== "imports" && view !== "symbols" && (
+              {view !== "imports" && view !== "symbols" && view !== "symbolsJson" && (
                 <> · {result.items.length} entries</>
               )}
               {view === "imports" && importGraph && (
                 <> · {importGraph.fileCount} source files</>
               )}
-              {view === "symbols" && symbolGraph && (
+              {(view === "symbols" || view === "symbolsJson") && symbolGraph && (
                 <>
                   {" "}
-                  · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols
+                  · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                  {symbolGraph.links.length} refs
                 </>
               )}
               {result.truncated && " · truncated"}
@@ -269,6 +270,11 @@ function Index() {
             )}
             {view === "imports" && importGraph && <ImportGraphView data={importGraph} />}
             {view === "symbols" && symbolGraph && <SymbolGraphView data={symbolGraph} />}
+            {view === "symbolsJson" && symbolGraph && (
+              <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
+                {JSON.stringify(symbolGraphToRecord(symbolGraph), null, 2)}
+              </pre>
+            )}
           </div>
         )}
       </div>
