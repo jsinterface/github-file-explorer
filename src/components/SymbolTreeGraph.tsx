@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { ChevronDown, ChevronUp, Footprints, Tornado } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { analyzeFunctionInSource, fetchRawFile, loadModuleFromSource, type FunctionTrace } from "@/lib/runFunction";
 import { CodeTracePanel } from "./CodeTracePanel";
 
@@ -113,48 +113,20 @@ export function SymbolTreeGraph({
   };
   const [stack, setStack] = useState<Frame[]>([]);
   const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
-  // Per-frame skip tokens, parallel to `stack`. Setting top.skip = true terminates
-  // the current frame's animation loop and pops it, returning control to its parent.
-  const skipStackRef = useRef<{ skip: boolean }[]>([]);
 
   // Animation speed multiplier: higher = faster. 1 = base 1500ms per step.
   const [speed, setSpeed] = useState(1);
   const [stackExpanded, setStackExpanded] = useState(false);
-  // When true, do not start new animations recursively for subsequent function references.
-  const [noRecurse, setNoRecurse] = useState(false);
-  const noRecurseRef = useRef(noRecurse);
-  useEffect(() => {
-    noRecurseRef.current = noRecurse;
-  }, [noRecurse]);
   const speedRef = useRef(speed);
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
   const BASE_STEP_MS = 1500;
-  // Sleep one "step" worth of time, re-rated continuously based on current speed.
-  // speed=0 pauses (waits until speed > 0 or cancellation).
-  const sleep = (_ms?: number) =>
+  const stepMs = () => BASE_STEP_MS / speedRef.current;
+  const sleep = (ms: number) =>
     new Promise<void>((resolve) => {
-      let remaining = BASE_STEP_MS; // remaining "scaled" ms to consume
-      let last = performance.now();
-      const tick = (now: number) => {
-        if (cancelRef.current.cancelled) {
-          resolve();
-          return;
-        }
-        const dt = now - last;
-        last = now;
-        const s = speedRef.current;
-        if (s > 0) remaining -= dt * s;
-        if (remaining <= 0) {
-          resolve();
-          return;
-        }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
+      window.setTimeout(resolve, ms);
     });
-  const stepMs = () => BASE_STEP_MS;
 
   // Build a Frame for a given export id. Fetches source, builds trace, and aligns edgeOrder.
   // Returns null if the export cannot be located or has no animatable refs.
@@ -217,9 +189,7 @@ export function SymbolTreeGraph({
       if (executeFn) {
         try {
           // inputJson is a comma-joined list of JSON-encoded args; parse as an array and spread.
-          const args: unknown[] = inputJson?.trim()
-            ? (JSON.parse(`[${inputJson}]`) as unknown[])
-            : [];
+          const args: unknown[] = inputJson?.trim() ? (JSON.parse(`[${inputJson}]`) as unknown[]) : [];
           const mod = await loadModuleFromSource(source, filePath);
           const fn = mod[exportName];
           if (typeof fn !== "function") {
@@ -255,9 +225,7 @@ export function SymbolTreeGraph({
       const frame = await buildFrame(exportId, executeFn);
       if (token.cancelled || !frame) return;
 
-      // Push frame + matching skip token.
-      const skipToken = { skip: false };
-      skipStackRef.current.push(skipToken);
+      // Push frame onto stack.
       setStack((s) => [...s, frame]);
 
       const total = frame.edgeOrder.length;
@@ -266,7 +234,6 @@ export function SymbolTreeGraph({
 
       for (let i = 0; i < total; i++) {
         if (token.cancelled) return;
-        if (skipToken.skip) break;
         // Update top frame: forward direction at step i.
         setStack((s) => {
           if (s.length === 0) return s;
@@ -276,16 +243,13 @@ export function SymbolTreeGraph({
         // Wait for the forward traveler to arrive.
         await sleep(stepMs());
         if (token.cancelled) return;
-        if (skipToken.skip) break;
 
         const targetId = frame.edgeOrder[i];
         // Recurse if target is a known function with its own refs and not already on the stack.
-        const targetIsKnown =
-          built.refsByExport.has(targetId) && built.kindById.get(targetId) === "function";
-        if (targetIsKnown && !nextPath.has(targetId) && !noRecurseRef.current) {
+        const targetIsKnown = built.refsByExport.has(targetId) && built.kindById.get(targetId) === "function";
+        if (targetIsKnown && !nextPath.has(targetId)) {
           await animateFrame(targetId, nextPath, false);
           if (token.cancelled) return;
-          if (skipToken.skip) break;
         }
 
         // Animate return: target -> source.
@@ -296,20 +260,13 @@ export function SymbolTreeGraph({
         });
         await sleep(stepMs());
         if (token.cancelled) return;
-        if (skipToken.skip) break;
       }
 
-      // Pop frame + skip token.
-      skipStackRef.current.pop();
+      // Pop frame.
       setStack((s) => s.slice(0, -1));
     },
     [buildFrame, built],
   );
-
-  const handleSkipFrame = useCallback(() => {
-    const top = skipStackRef.current[skipStackRef.current.length - 1];
-    if (top) top.skip = true;
-  }, []);
 
   const handleExportClick = useCallback(
     async (exportId: string, exportKind: "function" | "value") => {
@@ -317,7 +274,6 @@ export function SymbolTreeGraph({
       // Cancel any previous animation.
       cancelRef.current.cancelled = true;
       cancelRef.current = { cancelled: false };
-      skipStackRef.current = [];
       setStack([]);
       await animateFrame(exportId, new Set(), true);
     },
@@ -604,6 +560,82 @@ export function SymbolTreeGraph({
       return `M${p.s.x},${p.s.y} C${cx},${cy} ${cx},${cy} ${p.t.x},${p.t.y}`;
     }
 
+    const defs = svg.append("defs");
+
+    // Arrow marker for full opacity (highlighted)
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-full")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "#5c6bc0");
+
+    // Arrow marker for dimmed opacity
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-dim")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-muted-foreground)")
+      .attr("fill-opacity", 0.6);
+
+    // Arrow marker for default (no hover) reference edges, matches file edge color.
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-default")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-muted-foreground)");
+
+    // Arrow marker for incoming highlighted edges (inverse color).
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-in")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "#536dfe");
+
+    // White glow filter applied to a node label on hover.
+    const glow = defs
+      .append("filter")
+      .attr("id", "label-glow")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    glow.append("feGaussianBlur").attr("in", "SourceAlpha").attr("stdDeviation", 2.5).attr("result", "blur1");
+    glow.append("feFlood").attr("flood-color", "#ffffff").attr("flood-opacity", 1).attr("result", "white");
+    glow.append("feComposite").attr("in", "white").attr("in2", "blur1").attr("operator", "in").attr("result", "glow1");
+    const merge = glow.append("feMerge");
+    merge.append("feMergeNode").attr("in", "glow1");
+    merge.append("feMergeNode").attr("in", "glow1");
+    merge.append("feMergeNode").attr("in", "glow1");
+    merge.append("feMergeNode").attr("in", "SourceGraphic");
+
     const refSel = container
       .append("g")
       .attr("fill", "none")
@@ -615,7 +647,8 @@ export function SymbolTreeGraph({
       .attr("d", refPath)
       .attr("stroke-opacity", 1)
       .attr("data-src", (p) => p.s.node.data.id)
-      .attr("data-tgt", (p) => p.t.node.data.id);
+      .attr("data-tgt", (p) => p.t.node.data.id)
+      .attr("marker-end", "url(#arrow-ref-default)");
 
     // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
     const outgoingByExport = new Map<string, Set<string>>();
@@ -794,6 +827,13 @@ export function SymbolTreeGraph({
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
           return targetIds.has(sId) || targetIds.has(tId) ? FULL : DIM;
+        })
+        .attr("marker-end", (p) => {
+          const sId = p.s.node.data.id;
+          const tId = p.t.node.data.id;
+          if (targetIds.has(sId)) return "url(#arrow-ref-full)";
+          if (targetIds.has(tId)) return "url(#arrow-ref-in)";
+          return "url(#arrow-ref-dim)";
         });
       node.style("opacity", (n) => {
         const nid = n.node.data.id;
@@ -804,9 +844,7 @@ export function SymbolTreeGraph({
     function clearHighlight() {
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
-      refSel
-        .attr("stroke", "#555555")
-        .attr("stroke-opacity", 1);
+      refSel.attr("stroke", "#555555").attr("stroke-opacity", 1).attr("marker-end", "url(#arrow-ref-default)");
       node.style("opacity", FULL);
     }
 
@@ -844,12 +882,12 @@ export function SymbolTreeGraph({
       })
       .on("mouseleave", clearHighlight);
 
-    node
-      .append("circle")
-      .attr("r", (d) => radiusFor(d.node.data))
-      .attr("fill", (d) => colorFor(d.node.data));
+    // node
+    //   .append("circle")
+    //   .attr("r", (d) => radiusFor(d.node.data))
+    //   .attr("fill", (d) => colorFor(d.node.data));
 
-    node.append("title").text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
+    // node.append("title").text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
 
     // Scale labels by ring distance: center = 0em, outer ring = 1em.
     const nodeFontSizeFor = (r: number) => `${r / outerR}em`;
@@ -918,8 +956,7 @@ export function SymbolTreeGraph({
       });
       return;
     }
-    const activeTarget =
-      run.step >= 0 && run.step < run.edgeOrder.length ? run.edgeOrder[run.step] : null;
+    const activeTarget = run.step >= 0 && run.step < run.edgeOrder.length ? run.edgeOrder[run.step] : null;
     const visited = new Set(run.edgeOrder.slice(0, Math.max(0, run.step)));
 
     let activePath: SVGPathElement | null = null;
@@ -947,12 +984,9 @@ export function SymbolTreeGraph({
 
     // Glow the active target's label so the user sees which symbol is being called.
     if (activeTarget) {
-      const targetText = svg.querySelector<SVGTextElement>(
-        `g[data-node-id="${CSS.escape(activeTarget)}"] text`,
-      );
+      const targetText = svg.querySelector<SVGTextElement>(`g[data-node-id="${CSS.escape(activeTarget)}"] text`);
       if (targetText) {
-        targetText.style.filter =
-          "drop-shadow(0 0 4px #ffff00) drop-shadow(0 0 10px #ffff00)";
+        targetText.style.filter = "drop-shadow(0 0 4px #ffff00) drop-shadow(0 0 10px #ffff00)";
       }
     }
 
@@ -1014,19 +1048,14 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      // Track elapsed "scaled" progress so changing speed mid-animation re-rates smoothly.
-      // At speed s, progress per real ms = s / BASE_STEP_MS. Speed 0 → no progress (paused).
-      let progress = 0; // 0..1
-      let last = performance.now();
+      const duration = BASE_STEP_MS / speedRef.current; // matches stepMs()
+      const start = performance.now();
       const tick = (now: number) => {
-        const dt = now - last;
-        last = now;
-        const s = speedRef.current;
-        if (s > 0) progress = Math.min(1, progress + (dt * s) / BASE_STEP_MS);
-        const pt = animPath.getPointAtLength(progress * animLen);
+        const t = Math.min(1, (now - start) / duration);
+        const pt = animPath.getPointAtLength(t * animLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
-        if (progress < 1) {
+        if (t < 1) {
           travelerRafRef.current = requestAnimationFrame(tick);
         } else {
           travelerRafRef.current = null;
@@ -1067,67 +1096,27 @@ export function SymbolTreeGraph({
           />
         )}
         {stack.length > 0 && (
-          <div className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border p-2 text-xs shadow-md backdrop-blur-md" style={{ background: "color-mix(in oklab, var(--surface-elevated) 80%, transparent)" }}>
-            {/* Speed dial row with expand/collapse button */}
-            <div className="flex items-center gap-3">
-              <div className="flex flex-1 items-center gap-2 font-mono text-[10px]">
-                <span className="text-muted-foreground">speed</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={4}
-                  step={0.1}
-                  value={speed}
-                  onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                  className="h-1 flex-1 cursor-pointer accent-[#6d4c41]"
-                />
-                <span className="w-8 shrink-0 text-right font-semibold text-foreground">
-                  {speed.toFixed(2)}x
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleSkipFrame}
-                disabled={stack.length === 0}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="skip current frame"
-                title="Terminate current frame and return to the previous reference"
-              >
-                <Footprints className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setNoRecurse((v) => !v)}
-                className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-                aria-label={noRecurse ? "enable recursion" : "disable recursion"}
-                aria-pressed={noRecurse}
-                title={noRecurse ? "Enable recursive animation" : "Disable recursive animation"}
-              >
-                <Tornado className="h-4 w-4" />
-                {!noRecurse && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current"
-                  />
-                )}
-              </button>
-              {stack.length > 2 && (
-                <button
-                  type="button"
-                  onClick={() => setStackExpanded((v) => !v)}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-                  aria-label={stackExpanded ? "collapse" : "expand"}
-                >
-                  {stackExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronUp className="h-4 w-4" />
-                  )}
-                </button>
-              )}
+          <div
+            className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border p-2 text-xs shadow-md backdrop-blur-md"
+            style={{ background: "color-mix(in oklab, var(--surface-elevated) 80%, transparent)" }}
+          >
+            {/* Speed dial — first child = bottom row in flex-col-reverse */}
+            <div className="flex items-center gap-2 font-mono text-[10px]">
+              <span className="text-muted-foreground">speed</span>
+              <input
+                type="range"
+                min={0.25}
+                max={4}
+                step={0.25}
+                value={speed}
+                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                className="h-1 flex-1 cursor-pointer accent-[#6d4c41]"
+              />
+              <span className="w-8 shrink-0 text-right font-semibold text-foreground">{speed.toFixed(2)}x</span>
             </div>
             {(() => {
               const visibleStart = stackExpanded ? 0 : Math.max(0, stack.length - 2);
+              const hidden = visibleStart;
               return (
                 <>
                   {stack.slice(visibleStart).map((f, idx) => {
@@ -1175,8 +1164,7 @@ export function SymbolTreeGraph({
                     }
 
                     const fullCallLabel = callLabel;
-                    const displayCallLabel =
-                      callLabel.length > 50 ? callLabel.slice(0, 49) + "…" : callLabel;
+                    const displayCallLabel = callLabel.length > 50 ? callLabel.slice(0, 49) + "…" : callLabel;
 
                     return (
                       <div key={`${f.sourceExportId}-${i}`} className="flex flex-col gap-0.5">
@@ -1195,16 +1183,31 @@ export function SymbolTreeGraph({
                       </div>
                     );
                   })}
+                  {stack.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setStackExpanded((v) => !v)}
+                      className="flex items-center justify-center gap-1 rounded font-mono text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      {stackExpanded ? (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          collapse
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          show {hidden} more
+                        </>
+                      )}
+                    </button>
+                  )}
                 </>
               );
             })()}
           </div>
         )}
-        <svg
-          ref={ref}
-          className="relative h-full w-full [&_*]:pointer-events-auto"
-          style={{ pointerEvents: "none" }}
-        />
+        <svg ref={ref} className="relative h-full w-full [&_*]:pointer-events-auto" style={{ pointerEvents: "none" }} />
       </div>
     </div>
   );
