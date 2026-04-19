@@ -1095,7 +1095,7 @@ export function SymbolTreeGraph({
           />
         )}
         {stack.length > 0 && (
-          <div className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+          <div className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border p-2 text-xs shadow-md backdrop-blur-md" style={{ background: "color-mix(in oklab, var(--surface-elevated) 80%, transparent)" }}>
             {/* Speed dial — first child = bottom row in flex-col-reverse */}
             <div className="flex items-center gap-2 font-mono text-[10px]">
               <span className="text-muted-foreground">speed</span>
