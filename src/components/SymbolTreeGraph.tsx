@@ -113,7 +113,14 @@ export function SymbolTreeGraph({
   const [stack, setStack] = useState<Frame[]>([]);
   const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
 
-  const STEP_MS = 1500;
+  // Animation speed multiplier: higher = faster. 1 = base 1500ms per step.
+  const [speed, setSpeed] = useState(1);
+  const speedRef = useRef(speed);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+  const BASE_STEP_MS = 1500;
+  const stepMs = () => BASE_STEP_MS / speedRef.current;
   const sleep = (ms: number) =>
     new Promise<void>((resolve) => {
       window.setTimeout(resolve, ms);
