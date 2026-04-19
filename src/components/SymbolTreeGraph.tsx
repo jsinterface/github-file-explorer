@@ -345,19 +345,18 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .startAngle((d) => d.a0 + Math.PI / 2)
       .endAngle((d) => d.a1 + Math.PI / 2);
 
-    container
+    const folderArcSel = container
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-chart-1)")
       .attr("stroke-width", 2.5)
       .attr("stroke-linecap", "round")
       .attr("transform", `translate(${cx},${cy})`)
-      .selectAll("path")
+      .selectAll<SVGPathElement, FolderArc>("path")
       .data(folderArcs)
       .join("path")
-      .attr("d", (d) => arcGen(d))
-      .append("title")
-      .text((d) => `folder: ${d.name}`);
+      .attr("d", (d) => arcGen(d));
+    folderArcSel.append("title").text((d) => `folder: ${d.name}`);
 
     // Bent labels along the outer rim of each folder arc.
     const LABEL_OFFSET = 10;
