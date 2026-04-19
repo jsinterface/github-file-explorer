@@ -5,97 +5,117 @@ export type SymbolTreeNode =
   | { [key: string]: SymbolTreeNode }
   | Record<string, string[]>;
 
-type GNode = d3.SimulationNodeDatum & {
+type RawNode = {
   id: string;
-  label: string;
-  kind: "folder" | "file" | "export";
-};
-
-type GLink = d3.SimulationLinkDatum<GNode> & {
-  kind: "contains" | "ref";
+  name: string;
+  kind: "root" | "folder" | "file" | "export";
+  children?: RawNode[];
 };
 
 function isExportLeaf(v: unknown): v is Record<string, string[]> {
   if (!v || typeof v !== "object") return false;
-  return Object.values(v as Record<string, unknown>).every((x) => Array.isArray(x));
+  const vals = Object.values(v as Record<string, unknown>);
+  if (vals.length === 0) return false;
+  return vals.every((x) => Array.isArray(x));
 }
 
-function buildGraph(tree: Record<string, SymbolTreeNode>): {
-  nodes: GNode[];
-  links: GLink[];
+function buildHierarchy(tree: Record<string, SymbolTreeNode>): {
+  root: RawNode;
+  // export label (e.g. "dir/file.ts:name") -> node id
+  labelToId: Map<string, string>;
+  // export id -> referenced labels
+  refsByExport: Map<string, string[]>;
 } {
-  const nodes: GNode[] = [];
-  const links: GLink[] = [];
-  const seen = new Map<string, GNode>();
-  // Map from export label (e.g. "dir/file.ts:name") -> node id
+  const root: RawNode = { id: "__root__", name: "/", kind: "root", children: [] };
   const labelToId = new Map<string, string>();
-  // Pending references to resolve after all exports are registered
-  const pending: Array<{ from: string; label: string }> = [];
-
-  function addNode(n: GNode) {
-    if (!seen.has(n.id)) {
-      seen.set(n.id, n);
-      nodes.push(n);
-    }
-    return seen.get(n.id)!;
-  }
+  const refsByExport = new Map<string, string[]>();
 
   function walk(
     obj: Record<string, SymbolTreeNode>,
     pathParts: string[],
-    parentId: string | null,
+    parent: RawNode,
   ) {
     for (const [name, child] of Object.entries(obj)) {
       const parts = [...pathParts, name];
       const path = parts.join("/");
       if (isExportLeaf(child)) {
-        // file node
-        const fileId = `file:${path}`;
-        addNode({ id: fileId, label: name, kind: "file" });
-        if (parentId) links.push({ source: parentId, target: fileId, kind: "contains" });
-        // exports
+        const fileNode: RawNode = {
+          id: `file:${path}`,
+          name,
+          kind: "file",
+          children: [],
+        };
+        parent.children!.push(fileNode);
         const shortFile = parts.slice(-2).join("/");
         for (const [exportName, refs] of Object.entries(child)) {
           const exportId = `export:${path}#${exportName}`;
-          const exportLabel = `${shortFile}:${exportName}`;
-          addNode({ id: exportId, label: exportName, kind: "export" });
-          labelToId.set(exportLabel, exportId);
-          links.push({ source: fileId, target: exportId, kind: "contains" });
-          for (const ref of refs) {
-            pending.push({ from: exportId, label: ref });
-          }
+          const exportNode: RawNode = {
+            id: exportId,
+            name: exportName,
+            kind: "export",
+          };
+          fileNode.children!.push(exportNode);
+          labelToId.set(`${shortFile}:${exportName}`, exportId);
+          refsByExport.set(exportId, refs);
         }
       } else {
-        const folderId = `folder:${path}`;
-        addNode({ id: folderId, label: name, kind: "folder" });
-        if (parentId) links.push({ source: parentId, target: folderId, kind: "contains" });
-        walk(child as Record<string, SymbolTreeNode>, parts, folderId);
+        const folderNode: RawNode = {
+          id: `folder:${path}`,
+          name,
+          kind: "folder",
+          children: [],
+        };
+        parent.children!.push(folderNode);
+        walk(child as Record<string, SymbolTreeNode>, parts, folderNode);
       }
     }
   }
 
-  walk(tree, [], null);
-
-  for (const { from, label } of pending) {
-    const targetId = labelToId.get(label);
-    if (targetId) links.push({ source: from, target: targetId, kind: "ref" });
-  }
-
-  return { nodes, links };
+  walk(tree, [], root);
+  return { root, labelToId, refsByExport };
 }
 
 export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode> }) {
   const ref = useRef<SVGSVGElement | null>(null);
-  const built = useMemo(() => buildGraph(data), [data]);
+  const built = useMemo(() => buildHierarchy(data), [data]);
 
   useEffect(() => {
     if (!ref.current) return;
 
-    const width = 960;
-    const height = 640;
+    const { root: rawRoot, labelToId, refsByExport } = built;
 
-    const nodes: GNode[] = built.nodes.map((n) => ({ ...n }));
-    const links: GLink[] = built.links.map((l) => ({ ...l }));
+    // Vertical bottom-up tree: root at bottom, leaves (exports) at top.
+    // d3.tree() lays out with root at top by default; we'll flip Y at draw time.
+    const root = d3.hierarchy<RawNode>(rawRoot, (d) => d.children);
+
+    const leafCount = Math.max(root.leaves().length, 1);
+    const depth = (root.height ?? 1) + 1;
+
+    const colWidth = Math.max(28, Math.min(80, 1400 / leafCount));
+    const rowHeight = 90;
+
+    const marginTop = 40; // top space for reference arcs
+    const marginBottom = 40;
+    const marginLeft = 40;
+    const marginRight = 40;
+
+    const innerWidth = leafCount * colWidth;
+    const innerHeight = depth * rowHeight;
+
+    const layout = d3
+      .tree<RawNode>()
+      .size([innerWidth, innerHeight])
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1.4));
+
+    layout(root);
+
+    // Flip y so root sits at the bottom
+    root.each((n) => {
+      n.y = innerHeight - n.y!;
+    });
+
+    const width = innerWidth + marginLeft + marginRight;
+    const height = innerHeight + marginTop + marginBottom;
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
@@ -103,148 +123,164 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("viewBox", `0 0 ${width} ${height}`)
       .attr("preserveAspectRatio", "xMidYMid meet");
 
-    const container = svg.append("g");
+    const container = svg
+      .append("g")
+      .attr("transform", `translate(${marginLeft}, ${marginTop})`);
 
     const zoomBehavior = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.05, 8])
-      .on("zoom", (event) => container.attr("transform", event.transform.toString()));
+      .scaleExtent([0.1, 8])
+      .on("zoom", (event) => {
+        container.attr(
+          "transform",
+          `translate(${marginLeft + event.transform.x}, ${marginTop + event.transform.y}) scale(${event.transform.k})`,
+        );
+      });
     svg.call(zoomBehavior);
 
-    const defs = svg.append("defs");
-    for (const [id, color] of [
-      ["arrow-contains-tg", "var(--color-border)"],
-      ["arrow-ref-tg", "var(--color-chart-3)"],
-    ] as const) {
-      defs
-        .append("marker")
-        .attr("id", id)
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 12)
-        .attr("refY", 0)
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
-        .attr("orient", "auto")
-        .append("path")
-        .attr("d", "M0,-5L10,0L0,5")
-        .attr("fill", color);
-    }
+    // ---------- Tree links (containment) ----------
+    const linkGen = d3
+      .linkVertical<d3.HierarchyPointLink<RawNode>, d3.HierarchyPointNode<RawNode>>()
+      .x((d) => d.x!)
+      .y((d) => d.y!);
 
-    const link = container
+    container
       .append("g")
-      .selectAll("line")
-      .data(links)
-      .join("line")
-      .attr("stroke", (d) =>
-        d.kind === "ref" ? "var(--color-chart-3)" : "var(--color-border)",
-      )
-      .attr("stroke-opacity", (d) => (d.kind === "ref" ? 0.7 : 0.4))
-      .attr("stroke-width", (d) => (d.kind === "ref" ? 1 : 0.8))
-      .attr("stroke-dasharray", (d) => (d.kind === "ref" ? "3,2" : null))
-      .attr("marker-end", (d) =>
-        d.kind === "ref" ? "url(#arrow-ref-tg)" : "url(#arrow-contains-tg)",
-      );
+      .attr("fill", "none")
+      .attr("stroke", "var(--color-border)")
+      .attr("stroke-width", 1)
+      .selectAll("path")
+      .data(root.links())
+      .join("path")
+      .attr("d", linkGen as never);
+
+    // ---------- Tree nodes ----------
+    const colorFor = (k: RawNode["kind"]) =>
+      k === "root"
+        ? "var(--color-primary)"
+        : k === "folder"
+          ? "var(--color-chart-1)"
+          : k === "file"
+            ? "var(--color-chart-2)"
+            : "var(--color-chart-4)";
+
+    const radiusFor = (k: RawNode["kind"]) =>
+      k === "root" ? 5 : k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
 
     const node = container
       .append("g")
-      .selectAll<SVGGElement, GNode>("g")
-      .data(nodes)
+      .selectAll("g")
+      .data(root.descendants())
       .join("g")
-      .style("cursor", "grab");
-
-    const colorFor = (k: GNode["kind"]) =>
-      k === "folder"
-        ? "var(--color-chart-1)"
-        : k === "file"
-          ? "var(--color-chart-2)"
-          : "var(--color-chart-4)";
-
-    const radiusFor = (k: GNode["kind"]) =>
-      k === "folder" ? 5 : k === "file" ? 3.5 : 2.5;
+      .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
     node
       .append("circle")
-      .attr("r", (d) => radiusFor(d.kind))
-      .attr("fill", (d) => colorFor(d.kind))
+      .attr("r", (d) => radiusFor(d.data.kind))
+      .attr("fill", (d) => colorFor(d.data.kind))
       .attr("stroke", "var(--color-background)")
-      .attr("stroke-width", 0.8);
+      .attr("stroke-width", 1);
 
-    node.append("title").text((d) => `${d.kind}: ${d.label}`);
+    node.append("title").text((d) => `${d.data.kind}: ${d.data.name}`);
 
+    // Labels: exports above the node (rotated for density), folders/files below
     node
-      .filter((d) => d.kind !== "export")
+      .filter((d) => d.data.kind === "export")
       .append("text")
-      .attr("x", 6)
-      .attr("dy", "0.32em")
-      .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", (d) => (d.kind === "folder" ? 9 : 8))
-      .attr("fill", "var(--color-foreground)")
-      .text((d) => d.label);
-
-    node
-      .filter((d) => d.kind === "export")
-      .append("text")
-      .attr("x", 5)
+      .attr("transform", "rotate(-60)")
+      .attr("dx", 6)
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
       .attr("font-size", 7)
-      .attr("fill", "var(--color-muted-foreground)")
-      .text((d) => d.label);
+      .attr("fill", "var(--color-foreground)")
+      .text((d) => d.data.name);
 
-    const simulation = d3
-      .forceSimulation<GNode>(nodes)
-      .force(
-        "link",
-        d3
-          .forceLink<GNode, GLink>(links)
-          .id((d) => d.id)
-          .distance((l) => (l.kind === "ref" ? 50 : 25))
-          .strength((l) => (l.kind === "ref" ? 0.2 : 0.6)),
-      )
-      .force("charge", d3.forceManyBody().strength(-50))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collide", d3.forceCollide(7))
-      .on("tick", () => {
-        link
-          .attr("x1", (d) => (d.source as GNode).x!)
-          .attr("y1", (d) => (d.source as GNode).y!)
-          .attr("x2", (d) => (d.target as GNode).x!)
-          .attr("y2", (d) => (d.target as GNode).y!);
-        node.attr("transform", (d) => `translate(${d.x},${d.y})`);
-      });
+    node
+      .filter((d) => d.data.kind === "file" || d.data.kind === "folder" || d.data.kind === "root")
+      .append("text")
+      .attr("dy", "1.6em")
+      .attr("text-anchor", "middle")
+      .attr("font-family", "ui-monospace, monospace")
+      .attr("font-size", (d) => (d.data.kind === "folder" || d.data.kind === "root" ? 9 : 8))
+      .attr("fill", "var(--color-foreground)")
+      .text((d) => d.data.name);
 
-    const drag = d3
-      .drag<SVGGElement, GNode>()
-      .on("start", (event, d) => {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-      })
-      .on("drag", (event, d) => {
-        d.fx = event.x;
-        d.fy = event.y;
-      })
-      .on("end", (event, d) => {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
-      });
+    // ---------- Reference bezier curves between export nodes ----------
+    const idToPoint = new Map<string, { x: number; y: number }>();
+    root.each((n) => {
+      if (n.data.kind === "export") idToPoint.set(n.data.id, { x: n.x!, y: n.y! });
+    });
 
-    node.call(drag);
+    type RefPair = { sx: number; sy: number; tx: number; ty: number };
+    const refPairs: RefPair[] = [];
+    for (const [exportId, refs] of refsByExport) {
+      const sp = idToPoint.get(exportId);
+      if (!sp) continue;
+      for (const refLabel of refs) {
+        const targetId = labelToId.get(refLabel);
+        if (!targetId) continue;
+        const tp = idToPoint.get(targetId);
+        if (!tp) continue;
+        if (targetId === exportId) continue;
+        refPairs.push({ sx: sp.x, sy: sp.y, tx: tp.x, ty: tp.y });
+      }
+    }
+
+    // Bezier path: arcs upward (above export row) so they don't tangle with the tree.
+    // Exports are at y ≈ 0 (top). Use negative control-y to bow up.
+    function bezierPath(p: RefPair): string {
+      const dx = p.tx - p.sx;
+      const dist = Math.abs(dx);
+      const lift = Math.min(marginTop * 0.9, 20 + dist * 0.35);
+      const c1x = p.sx;
+      const c1y = p.sy - lift;
+      const c2x = p.tx;
+      const c2y = p.ty - lift;
+      return `M${p.sx},${p.sy} C${c1x},${c1y} ${c2x},${c2y} ${p.tx},${p.ty}`;
+    }
+
+    svg
+      .append("defs")
+      .append("marker")
+      .attr("id", "arrow-ref-stg")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-chart-3)");
+
+    container
+      .append("g")
+      .attr("fill", "none")
+      .attr("stroke", "var(--color-chart-3)")
+      .attr("stroke-opacity", 0.45)
+      .attr("stroke-width", 0.8)
+      .selectAll("path")
+      .data(refPairs)
+      .join("path")
+      .attr("d", (d) => bezierPath(d))
+      .attr("marker-end", "url(#arrow-ref-stg)");
 
     return () => {
-      simulation.stop();
       svg.on(".zoom", null);
       svg.selectAll("*").remove();
     };
   }, [built]);
 
-  const refLinks = built.links.filter((l) => l.kind === "ref").length;
+  const refCount = Array.from(built.refsByExport.values()).reduce(
+    (a, b) => a + b.length,
+    0,
+  );
+  const exportCount = built.refsByExport.size;
 
   return (
     <div className="rounded-md border border-border bg-muted">
-      <div className="max-h-[70vh] overflow-hidden">
-        <svg ref={ref} className="w-full" style={{ height: "70vh" }} />
+      <div className="max-h-[70vh] overflow-auto">
+        <svg ref={ref} className="w-full" style={{ minHeight: "60vh" }} />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
@@ -268,10 +304,17 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
           />
           export
         </span>
-        <span>
-          {built.nodes.length} nodes · {refLinks} references
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-2.5 w-0.5"
+            style={{ background: "var(--color-chart-3)" }}
+          />
+          reference
         </span>
-        <span className="ml-auto">drag nodes • scroll to zoom</span>
+        <span>
+          {exportCount} exports · {refCount} references
+        </span>
+        <span className="ml-auto">scroll to pan • pinch/scroll to zoom</span>
       </div>
     </div>
   );
