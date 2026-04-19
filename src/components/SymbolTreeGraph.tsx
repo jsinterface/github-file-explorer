@@ -138,6 +138,7 @@ export function SymbolTreeGraph({
             result: { ok: false, error: "Could not locate export in source." },
             sourceExportId: exportId,
             edgeOrder: [],
+            completed: true,
           });
           return;
         }
