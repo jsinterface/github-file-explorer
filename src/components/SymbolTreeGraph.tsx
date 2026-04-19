@@ -1,5 +1,12 @@
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
+import {
+  analyzeFunctionInSource,
+  fetchRawFile,
+  loadModuleFromSource,
+  type FunctionTrace,
+} from "@/lib/runFunction";
+import { CodeTracePanel } from "./CodeTracePanel";
 
 export type SymbolLeaf = {
   kind: "function" | "value";
