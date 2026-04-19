@@ -135,7 +135,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       const layout = d3
         .tree<RawNode>()
         .size([span, 1])
-        .separation((a, b) => (a.parent === b.parent ? 1 : 1.3));
+        .separation((a, b) => {
+          if (a.parent === b.parent) return 1;
+          // Different file (or different folder) -> larger gap.
+          if (a.parent?.parent === b.parent?.parent) return 3;
+          return 4;
+        });
       layout(h);
 
       h.each((n) => {
