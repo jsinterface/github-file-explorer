@@ -1101,25 +1101,40 @@ export function SymbolTreeGraph({
         )}
         {stack.length > 0 && (
           <div className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border p-2 text-xs shadow-md backdrop-blur-md" style={{ background: "color-mix(in oklab, var(--surface-elevated) 80%, transparent)" }}>
-            {/* Speed dial — first child = bottom row in flex-col-reverse */}
-            <div className="flex items-center gap-2 font-mono text-[10px]">
-              <span className="text-muted-foreground">speed</span>
-              <input
-                type="range"
-                min={0.25}
-                max={4}
-                step={0.25}
-                value={speed}
-                onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                className="h-1 flex-1 cursor-pointer accent-[#6d4c41]"
-              />
-              <span className="w-8 shrink-0 text-right font-semibold text-foreground">
-                {speed.toFixed(2)}x
-              </span>
+            {/* Speed dial row with expand/collapse button */}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-1 items-center gap-2 font-mono text-[10px]">
+                <span className="text-muted-foreground">speed</span>
+                <input
+                  type="range"
+                  min={0.25}
+                  max={4}
+                  step={0.25}
+                  value={speed}
+                  onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                  className="h-1 flex-1 cursor-pointer accent-[#6d4c41]"
+                />
+                <span className="w-8 shrink-0 text-right font-semibold text-foreground">
+                  {speed.toFixed(2)}x
+                </span>
+              </div>
+              {stack.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setStackExpanded((v) => !v)}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                  aria-label={stackExpanded ? "collapse" : "expand"}
+                >
+                  {stackExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4" />
+                  )}
+                </button>
+              )}
             </div>
             {(() => {
               const visibleStart = stackExpanded ? 0 : Math.max(0, stack.length - 2);
-              const hidden = visibleStart;
               return (
                 <>
                   {stack.slice(visibleStart).map((f, idx) => {
@@ -1187,25 +1202,6 @@ export function SymbolTreeGraph({
                       </div>
                     );
                   })}
-                  {stack.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => setStackExpanded((v) => !v)}
-                      className="flex items-center justify-center gap-1 rounded font-mono text-[10px] text-muted-foreground hover:text-foreground"
-                    >
-                      {stackExpanded ? (
-                        <>
-                          <ChevronDown className="h-3 w-3" />
-                          collapse
-                        </>
-                      ) : (
-                        <>
-                          <ChevronUp className="h-3 w-3" />
-                          show {hidden} more
-                        </>
-                      )}
-                    </button>
-                  )}
                 </>
               );
             })()}
