@@ -8,9 +8,9 @@ type Placed = {
   file: string;
   name: string;
   kind: "function" | "value";
-  angle: number; // radians
-  x: number;
-  y: number;
+  a0: number;
+  a1: number;
+  angle: number; // midpoint
   indegree: number;
 };
 
@@ -71,11 +71,21 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
     const ringR = outerR + 14;
     const fileArcR = outerR + 28;
 
-    // Place nodes evenly around the ring with small gaps between file groups.
-    const gapPerGroup = 0.012; // radians
-    const totalGap = gapPerGroup * fileSpans.length;
-    const usable = Math.PI * 2 - totalGap;
-    const stepBase = usable / N;
+    // Each node gets an arc length proportional to its indegree.
+    // We give every node a small minimum arc so zero-indegree connected
+    // nodes (those that only reference others) remain visible.
+    const indegArr = ordered.map((n) => indegree.get(n.id) ?? 0);
+    const totalIndeg = indegArr.reduce((a, b) => a + b, 0);
+    const MIN_FRAC = 0.25; // each node gets at least this fraction of an "average slice"
+
+    const gapPerGroup = 0.012; // radians between file groups
+    const totalGroupGap = gapPerGroup * fileSpans.length;
+    const usable = Math.PI * 2 - totalGroupGap;
+
+    // Compute a weight per node: max(indeg, MIN_FRAC * avg)
+    const avgIndeg = totalIndeg / Math.max(1, N);
+    const weights = indegArr.map((d) => Math.max(d, MIN_FRAC * Math.max(avgIndeg, 1)));
+    const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
 
     const placed: Placed[] = [];
     const fileArcs: Array<{ file: string; a0: number; a1: number; color: string }> = [];
@@ -84,23 +94,25 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
     const colors = d3.schemeTableau10;
     fileSpans.forEach((span, fi) => {
       const a0 = cursor;
-      const count = span.end - span.start + 1;
-      for (let i = 0; i < count; i++) {
-        const angle = cursor + stepBase / 2 + i * stepBase;
-        const n = ordered[span.start + i];
+      for (let idx = span.start; idx <= span.end; idx++) {
+        const n = ordered[idx];
+        const arc = (weights[idx] / totalWeight) * usable;
+        const na0 = cursor;
+        const na1 = cursor + arc;
+        const angle = (na0 + na1) / 2;
         placed.push({
           id: n.id,
           label: n.label,
           file: n.file,
           name: n.name,
           kind: n.kind,
+          a0: na0,
+          a1: na1,
           angle,
-          x: cx + outerR * Math.cos(angle),
-          y: cy + outerR * Math.sin(angle),
           indegree: indegree.get(n.id) ?? 0,
         });
+        cursor = na1;
       }
-      cursor += stepBase * count;
       const a1 = cursor;
       fileArcs.push({ file: span.file, a0, a1, color: colors[fi % colors.length] });
       cursor += gapPerGroup;
