@@ -407,10 +407,33 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     const node = container
       .append("g")
-      .selectAll("g")
+      .selectAll<SVGGElement, Placed>("g")
       .data(placed.filter((p) => p.node.data.kind !== "folder"))
       .join("g")
-      .attr("transform", (d) => `translate(${d.x},${d.y})`);
+      .attr("transform", (d) => `translate(${d.x},${d.y})`)
+      .style("cursor", "pointer")
+      .on("mouseenter", (_e, d) => {
+        const anc = leafAncestors.get(d.node.data.id);
+        if (!anc) return;
+        linkSel
+          .attr("stroke", (l) =>
+            anc.links.has(linkKey(l.s.node.data.id, l.t.node.data.id))
+              ? "var(--color-chart-4)"
+              : "var(--color-border)",
+          )
+          .attr("stroke-width", (l) =>
+            anc.links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? 2 : 1,
+          );
+        folderArcSel
+          .attr("stroke", (a) =>
+            anc.folders.has(a.id) ? "var(--color-chart-4)" : "var(--color-chart-1)",
+          )
+          .attr("stroke-width", (a) => (anc.folders.has(a.id) ? 4 : 2.5));
+      })
+      .on("mouseleave", () => {
+        linkSel.attr("stroke", "var(--color-border)").attr("stroke-width", 1);
+        folderArcSel.attr("stroke", "var(--color-chart-1)").attr("stroke-width", 2.5);
+      });
 
     node
       .append("circle")
