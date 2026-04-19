@@ -457,18 +457,11 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       outgoingByExport.get(id)?.forEach((x) => relatedExports.add(x));
       incomingByExport.get(id)?.forEach((x) => relatedExports.add(x));
 
-      // Union ancestor folders/files/links across self + related exports.
+      // Only the hovered node's own ancestor folders/files/links are highlighted.
       const anc = leafAncestors.get(id);
       const folders = new Set<string>(anc?.folders ?? []);
       const files = new Set<string>(anc?.files ?? []);
       const links = new Set<string>(anc?.links ?? []);
-      relatedExports.forEach((rid) => {
-        const a = leafAncestors.get(rid);
-        if (!a) return;
-        a.folders.forEach((f) => folders.add(f));
-        a.files.forEach((f) => files.add(f));
-        a.links.forEach((l) => links.add(l));
-      });
 
       linkSel.attr("stroke-opacity", (l) =>
         links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? FULL : DIM,
