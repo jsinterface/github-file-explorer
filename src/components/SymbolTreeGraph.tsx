@@ -91,9 +91,36 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const leafCounts = hierarchies.map((h) => Math.max(1, h.leaves().length));
     const totalLeaves = leafCounts.reduce((a, b) => a + b, 0);
 
-    // Scale ring radii based on leaf density: each leaf gets ~MIN_ARC_PER_LEAF
-    // arc length on the inner ring, and the outer ring grows proportionally.
-    const MIN_ARC_PER_LEAF = 14;
+    // Precompute export indegrees (incoming reference count) for radius/spacing scaling.
+    const indegByExport = new Map<string, number>();
+    for (const refs of refsByExport.values()) {
+      for (const label of refs) {
+        const id = labelToId.get(label);
+        if (!id) continue;
+        indegByExport.set(id, (indegByExport.get(id) ?? 0) + 1);
+      }
+    }
+    const maxIndeg = Math.max(1, ...indegByExport.values());
+
+    // Export node radius scales with log(indegree).
+    const EXPORT_R_MIN = 2.5;
+    const EXPORT_R_MAX = 9;
+    const exportRadiusFor = (id: string) => {
+      const d = indegByExport.get(id) ?? 0;
+      const t = Math.log1p(d) / Math.log1p(maxIndeg);
+      return EXPORT_R_MIN + t * (EXPORT_R_MAX - EXPORT_R_MIN);
+    };
+
+    // Scale ring radii based on leaf density AND average export size so
+    // larger nodes get proportionally more breathing room.
+    const avgExportR =
+      hierarchies.reduce(
+        (acc, h) =>
+          acc +
+          h.leaves().reduce((s, l) => s + exportRadiusFor(l.data.id), 0),
+        0,
+      ) / Math.max(1, totalLeaves);
+    const MIN_ARC_PER_LEAF = Math.max(14, avgExportR * 3.2);
     const BASE_INNER = 120;
     const BASE_OUTER = 420;
     const densityInnerR = (totalLeaves * MIN_ARC_PER_LEAF) / (2 * Math.PI);
