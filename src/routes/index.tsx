@@ -3,7 +3,13 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileGraph } from "@/components/FileGraph";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ImportGraphView } from "@/components/ImportGraph";
@@ -243,18 +249,21 @@ function Index() {
             />
           </div>
           <div className="flex flex-col">
-            <Label className="mb-1.5">View</Label>
-            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-              <TabsList>
-                <TabsTrigger value="json">JSON</TabsTrigger>
-                <TabsTrigger value="graph">Files</TabsTrigger>
-                <TabsTrigger value="imports">Imports</TabsTrigger>
-                <TabsTrigger value="symbols">Symbols</TabsTrigger>
-                <TabsTrigger value="symbolsLoom">Symbols Loom</TabsTrigger>
-                <TabsTrigger value="symbolsJson">Symbols JSON</TabsTrigger>
-                <TabsTrigger value="symbolTree">Symbol Tree</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <Label htmlFor="view-select" className="mb-1.5">View</Label>
+            <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
+              <SelectTrigger id="view-select" className="sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="json">JSON</SelectItem>
+                <SelectItem value="graph">Files</SelectItem>
+                <SelectItem value="imports">Imports</SelectItem>
+                <SelectItem value="symbols">Symbols</SelectItem>
+                <SelectItem value="symbolsLoom">Symbols Loom</SelectItem>
+                <SelectItem value="symbolsJson">Symbols JSON</SelectItem>
+                <SelectItem value="symbolTree">Symbol Tree</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <Button type="submit" disabled={loading}>
             {loading
