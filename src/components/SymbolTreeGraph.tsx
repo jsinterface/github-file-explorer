@@ -444,7 +444,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const VALUE_COLOR = "#ffff00";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
-      if (n.kind === "file") return "var(--color-chart-2)";
+      if (n.kind === "file") return "var(--color-muted-foreground)";
       return n.exportKind === "function" ? FUNCTION_COLOR : VALUE_COLOR;
     };
 
