@@ -366,6 +366,28 @@ function Index() {
                         next[i] = e.target.value;
                         setInputArgs(next);
                       }}
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === "Backspace" &&
+                          arg === "" &&
+                          inputArgs.length > 1
+                        ) {
+                          e.preventDefault();
+                          const next = inputArgs.filter((_, idx) => idx !== i);
+                          setInputArgs(next);
+                          // Focus previous (or next) input.
+                          const form = (e.currentTarget as HTMLInputElement).form;
+                          requestAnimationFrame(() => {
+                            const inputs = form?.querySelectorAll<HTMLInputElement>(
+                              'input[data-arg-input="true"]',
+                            );
+                            const target = inputs?.[Math.max(0, i - 1)];
+                            target?.focus();
+                            target?.setSelectionRange(target.value.length, target.value.length);
+                          });
+                        }
+                      }}
+                      data-arg-input="true"
                       spellCheck={false}
                       style={{ width }}
                       className="min-w-0 border-0 bg-transparent px-0.5 font-mono text-xs text-foreground outline-none focus:ring-0"
