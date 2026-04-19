@@ -1156,12 +1156,16 @@ export function SymbolTreeGraph({
                 }
               }
 
+              const fullCallLabel = callLabel;
+              const displayCallLabel =
+                callLabel.length > 50 ? callLabel.slice(0, 49) + "…" : callLabel;
+
               return (
                 <div key={`${f.sourceExportId}-${i}`} className="flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-2 font-mono text-[10px]">
                     <span className="truncate text-muted-foreground">{f.filePath}</span>
-                    <span className="shrink-0 truncate font-semibold text-foreground" title={callLabel}>
-                      {callLabel}
+                    <span className="shrink-0 font-semibold text-foreground" title={fullCallLabel}>
+                      {displayCallLabel}
                     </span>
                   </div>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
