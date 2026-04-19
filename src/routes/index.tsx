@@ -255,9 +255,9 @@ function Index() {
       </div>
 
       {/* Floating pill-shaped form at the bottom */}
-      <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-end gap-2 px-4">
         {(view === "symbolTree" && symbolGraph) || (loading && progress) || error || result ? (
-          <div className="pointer-events-auto ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+          <div className="pointer-events-auto inline-flex w-auto max-w-full items-center gap-x-3 gap-y-1 self-end rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
             {view === "symbolTree" && symbolGraph && (
               <>
                 <span className="flex items-center gap-1.5">
@@ -291,7 +291,7 @@ function Index() {
               </>
             )}
             {(view === "symbolTree" && symbolGraph) && (loading && progress || error || result) && (
-              <div className="basis-full h-0" />
+              <span className="mx-1 h-3 w-px bg-border" />
             )}
             {loading && progress ? (
               <span>{progress}</span>
@@ -323,7 +323,7 @@ function Index() {
 
         <form
           onSubmit={handleSubmit}
-          className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 rounded-full border border-border bg-background/80 px-2 py-2 shadow-lg backdrop-blur-md"
+          className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 self-center rounded-full border border-border bg-background/80 px-2 py-2 shadow-lg backdrop-blur-md"
         >
           <Input
             id="repo"
