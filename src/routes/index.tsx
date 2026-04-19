@@ -8,6 +8,7 @@ import { FileGraph } from "@/components/FileGraph";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ImportGraphView } from "@/components/ImportGraph";
 import { SymbolGraphView } from "@/components/SymbolGraph";
+import { SymbolTreeGraph } from "@/components/SymbolTreeGraph";
 import { buildImportGraph, type ImportGraph } from "@/lib/importGraph";
 import { buildSymbolGraph, type SymbolGraph } from "@/lib/symbolGraph";
 
@@ -71,7 +72,7 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
   return root;
 }
 
-type ViewMode = "json" | "graph" | "imports" | "symbols" | "symbolsJson";
+type ViewMode = "json" | "graph" | "imports" | "symbols" | "symbolsJson" | "symbolTree";
 
 type SymbolTreeNode =
   | { [key: string]: SymbolTreeNode }
@@ -146,7 +147,7 @@ function Index() {
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
 
-      if (view === "imports" || view === "symbols" || view === "symbolsJson") {
+      if (view === "imports" || view === "symbols" || view === "symbolsJson" || view === "symbolTree") {
         if (view === "imports") {
           const graph = await buildImportGraph(
             parsed.owner,
@@ -242,6 +243,7 @@ function Index() {
                 <TabsTrigger value="imports">Imports</TabsTrigger>
                 <TabsTrigger value="symbols">Symbols</TabsTrigger>
                 <TabsTrigger value="symbolsJson">Symbols JSON</TabsTrigger>
+                <TabsTrigger value="symbolTree">Symbol Tree</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -250,7 +252,7 @@ function Index() {
               ? "Loading…"
               : view === "imports"
                 ? "Analyze imports"
-                : view === "symbols" || view === "symbolsJson"
+              : view === "symbols" || view === "symbolsJson" || view === "symbolTree"
                   ? "Analyze symbols"
                   : "Fetch tree"}
           </Button>
@@ -273,13 +275,13 @@ function Index() {
             <div className="mb-3 text-xs text-muted-foreground">
               <span className="font-mono">{result.repo}</span> · branch{" "}
               <span className="font-mono">{result.branch}</span>
-              {view !== "imports" && view !== "symbols" && view !== "symbolsJson" && (
+              {view !== "imports" && view !== "symbols" && view !== "symbolsJson" && view !== "symbolTree" && (
                 <> · {result.items.length} entries</>
               )}
               {view === "imports" && importGraph && (
                 <> · {importGraph.fileCount} source files</>
               )}
-              {(view === "symbols" || view === "symbolsJson") && symbolGraph && (
+              {(view === "symbols" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
                 <>
                   {" "}
                   · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
@@ -302,6 +304,9 @@ function Index() {
               <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
                 {JSON.stringify(symbolGraphToTree(symbolGraph), null, 2)}
               </pre>
+            )}
+            {view === "symbolTree" && symbolGraph && (
+              <SymbolTreeGraph data={symbolGraphToTree(symbolGraph)} />
             )}
           </div>
         )}
