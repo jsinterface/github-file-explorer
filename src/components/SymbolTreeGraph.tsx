@@ -1047,7 +1047,7 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1500; // matches STEP_MS
+      const duration = BASE_STEP_MS / speedRef.current; // matches stepMs()
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
