@@ -100,6 +100,8 @@
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
   --ref-out-color: #ac9201;
+  --background: #222222;
+  --surface-elevated: #3a3a3a;
 }
 
 .dark {
@@ -136,6 +138,8 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
   --ref-out-color: #ffff00;
+  --background: #222222;
+  --surface-elevated: #3a3a3a;
 }
 
 @import url("https://fonts.googleapis.com/css2?family=Averia+Sans+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap");
