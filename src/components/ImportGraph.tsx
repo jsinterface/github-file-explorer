@@ -24,9 +24,7 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
-    svg
-      .attr("viewBox", `0 0 ${width} ${height}`)
-      .attr("preserveAspectRatio", "xMidYMid meet");
+    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
 
     const container = svg.append("g");
 
@@ -42,7 +40,7 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
       .append("marker")
       .attr("id", "arrow")
       .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 14)
+      .attr("refX", 20)
       .attr("refY", 0)
       .attr("markerWidth", 6)
       .attr("markerHeight", 6)
@@ -71,15 +69,11 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
     node
       .append("circle")
       .attr("r", (d) => (d.kind === "external" ? 5 : 3.5))
-      .attr("fill", (d) =>
-        d.kind === "external" ? "var(--color-chart-3)" : "var(--color-chart-2)",
-      )
+      .attr("fill", (d) => (d.kind === "external" ? "var(--color-chart-3)" : "var(--color-chart-2)"))
       .attr("stroke", "var(--color-background)")
       .attr("stroke-width", 1);
 
-    node
-      .append("title")
-      .text((d) => (d.kind === "external" ? `npm: ${d.label}` : d.label));
+    node.append("title").text((d) => (d.kind === "external" ? `npm: ${d.label}` : d.label));
 
     node
       .filter((d) => d.kind === "external")
@@ -146,22 +140,15 @@ export function ImportGraphView({ data }: { data: ImportGraphData }) {
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-2)" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-2)" }} />
           internal module
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-3)" }}
-          />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-3)" }} />
           npm package
         </span>
         <span>
-          {data.nodes.length} nodes · {data.links.length} edges · {data.externalCount}{" "}
-          external
+          {data.nodes.length} nodes · {data.links.length} edges · {data.externalCount} external
         </span>
         <span className="ml-auto">drag nodes • scroll to zoom</span>
       </div>
