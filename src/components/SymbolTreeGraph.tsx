@@ -91,9 +91,36 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const leafCounts = hierarchies.map((h) => Math.max(1, h.leaves().length));
     const totalLeaves = leafCounts.reduce((a, b) => a + b, 0);
 
-    // Scale ring radii based on leaf density: each leaf gets ~MIN_ARC_PER_LEAF
-    // arc length on the inner ring, and the outer ring grows proportionally.
-    const MIN_ARC_PER_LEAF = 14;
+    // Precompute export indegrees (incoming reference count) for radius/spacing scaling.
+    const indegByExport = new Map<string, number>();
+    for (const refs of refsByExport.values()) {
+      for (const label of refs) {
+        const id = labelToId.get(label);
+        if (!id) continue;
+        indegByExport.set(id, (indegByExport.get(id) ?? 0) + 1);
+      }
+    }
+    const maxIndeg = Math.max(1, ...indegByExport.values());
+
+    // Export node radius scales with log(indegree).
+    const EXPORT_R_MIN = 2.5;
+    const EXPORT_R_MAX = 9;
+    const exportRadiusFor = (id: string) => {
+      const d = indegByExport.get(id) ?? 0;
+      const t = Math.log1p(d) / Math.log1p(maxIndeg);
+      return EXPORT_R_MIN + t * (EXPORT_R_MAX - EXPORT_R_MIN);
+    };
+
+    // Scale ring radii based on leaf density AND average export size so
+    // larger nodes get proportionally more breathing room.
+    const avgExportR =
+      hierarchies.reduce(
+        (acc, h) =>
+          acc +
+          h.leaves().reduce((s, l) => s + exportRadiusFor(l.data.id), 0),
+        0,
+      ) / Math.max(1, totalLeaves);
+    const MIN_ARC_PER_LEAF = Math.max(14, avgExportR * 3.2);
     const BASE_INNER = 120;
     const BASE_OUTER = 420;
     const densityInnerR = (totalLeaves * MIN_ARC_PER_LEAF) / (2 * Math.PI);
@@ -141,10 +168,15 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .tree<RawNode>()
         .size([span, 1])
         .separation((a, b) => {
-          if (a.parent === b.parent) return 1;
-          // Different file (or different folder) -> larger gap.
-          if (a.parent?.parent === b.parent?.parent) return 3;
-          return 4;
+          // Base gap weighted by node sizes so larger leaves push neighbors out.
+          const sizeWeight = (n: typeof a) => {
+            if (n.data.kind !== "export") return 1;
+            return exportRadiusFor(n.data.id) / EXPORT_R_MIN;
+          };
+          const sw = (sizeWeight(a) + sizeWeight(b)) / 2;
+          if (a.parent === b.parent) return sw;
+          if (a.parent?.parent === b.parent?.parent) return 3 * sw;
+          return 4 * sw;
         });
       layout(h);
 
@@ -380,24 +412,22 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
-    // Build indegree map for export nodes (number of incoming references).
-    const maxIndegree = Math.max(
-      1,
-      ...Array.from(incomingByExport.values()).map((s) => s.size),
-    );
     const exportColorScale = d3
       .scaleSequential<string>((t) => d3.interpolateTurbo(0.1 + t * 0.85))
-      .domain([0, Math.log1p(maxIndegree)]);
+      .domain([0, Math.log1p(maxIndeg)]);
 
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-chart-2)";
-      const indeg = incomingByExport.get(n.id)?.size ?? 0;
+      const indeg = indegByExport.get(n.id) ?? 0;
       return exportColorScale(Math.log1p(indeg));
     };
 
-    const radiusFor = (k: RawNode["kind"]) =>
-      k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
+    const radiusFor = (n: RawNode) => {
+      if (n.kind === "folder") return 4;
+      if (n.kind === "file") return 3.5;
+      return exportRadiusFor(n.id);
+    };
 
     // Folder ring arcs (drawn before nodes so node circles sit on top).
     const arcGen = d3
@@ -577,7 +607,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     node
       .append("circle")
-      .attr("r", (d) => radiusFor(d.node.data.kind))
+      .attr("r", (d) => radiusFor(d.node.data))
       .attr("fill", (d) => colorFor(d.node.data));
 
     node
@@ -600,7 +630,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         return flip ? "end" : "start";
       })
       .attr("dx", (d) => {
-        const r = radiusFor(d.node.data.kind) + 3;
+        const r = radiusFor(d.node.data) + 3;
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
         return flip ? -r : r;
       })
