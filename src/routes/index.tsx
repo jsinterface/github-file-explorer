@@ -324,7 +324,9 @@ function Index() {
           className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 self-center rounded-full border border-border px-2 py-2 shadow-lg backdrop-blur-md"
           style={{ background: "color-mix(in oklab, var(--surface-elevated) 85%, transparent)" }}
         >
-          <Github className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3a3a3a]">
+            <Github className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          </span>
           <Input
             id="repo"
             value={input}
@@ -349,7 +351,7 @@ function Index() {
           </Select>
           {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
             <div className="flex flex-1 items-center font-mono text-xs text-muted-foreground">
-              <span className="select-none pl-1 pr-0.5">(</span>
+              <span className="select-none pl-1 pr-0.5 text-2xl leading-none">(</span>
               <Input
                 id="input-json"
                 value={inputJson}
@@ -358,7 +360,7 @@ function Index() {
                 className="flex-1 rounded-none border-0 bg-transparent px-1 font-mono text-xs shadow-none focus-visible:ring-0"
                 placeholder='{"name": "world"}'
               />
-              <span className="select-none pl-0.5 pr-1">)</span>
+              <span className="select-none pl-0.5 pr-1 text-2xl leading-none">)</span>
             </div>
           )}
           {/* Hidden submit so Enter key triggers form submission */}
