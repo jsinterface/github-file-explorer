@@ -230,7 +230,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
     svg
-      .attr("viewBox", `0 0 ${size} ${size}`)
+      .attr("viewBox", `${-size / 2} ${-size / 2} ${size} ${size}`)
       .attr("preserveAspectRatio", "xMidYMid meet");
 
     const container = svg.append("g");
