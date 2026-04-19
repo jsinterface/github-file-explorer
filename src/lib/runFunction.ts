@@ -82,32 +82,32 @@ export function analyzeFunctionInSource(
     return null;
   }
 
-  let bodyPath: NodePath<t.Node> | null = null;
+  const holder: { path: NodePath<t.Node> | null } = { path: null };
   const ownName = exportName === "default" ? null : exportName;
 
   traverse(ast, {
     ExportNamedDeclaration(p) {
-      if (bodyPath) return;
+      if (holder.path) return;
       const decl = p.node.declaration;
       if (!decl) return;
       if (decl.type === "FunctionDeclaration" && decl.id?.name === exportName) {
-        bodyPath = p.get("declaration") as NodePath;
+        holder.path = p.get("declaration") as NodePath<t.Node>;
       } else if (decl.type === "ClassDeclaration" && decl.id?.name === exportName) {
-        bodyPath = p.get("declaration") as NodePath;
+        holder.path = p.get("declaration") as NodePath<t.Node>;
       } else if (decl.type === "VariableDeclaration") {
         const declPath = p.get("declaration") as NodePath<t.VariableDeclaration>;
         const declarators = declPath.get("declarations") as NodePath<t.VariableDeclarator>[];
         for (const dPath of declarators) {
           const d = dPath.node;
           if (d.id.type === "Identifier" && d.id.name === exportName && d.init && isFunctionNode(d.init)) {
-            bodyPath = dPath.get("init") as NodePath;
+            holder.path = dPath.get("init") as NodePath<t.Node>;
             break;
           }
         }
       }
     },
     ExportDefaultDeclaration(p) {
-      if (bodyPath) return;
+      if (holder.path) return;
       if (exportName !== "default") return;
       const decl = p.node.declaration;
       if (
@@ -116,11 +116,12 @@ export function analyzeFunctionInSource(
         decl.type === "ArrowFunctionExpression" ||
         decl.type === "ClassDeclaration"
       ) {
-        bodyPath = p.get("declaration") as NodePath;
+        holder.path = p.get("declaration") as NodePath<t.Node>;
       }
     },
   });
 
+  const bodyPath = holder.path;
   if (!bodyPath) return null;
   const bodyNode = bodyPath.node;
   const bodyStart = bodyNode.start ?? 0;
