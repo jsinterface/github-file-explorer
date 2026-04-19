@@ -168,10 +168,15 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .tree<RawNode>()
         .size([span, 1])
         .separation((a, b) => {
-          if (a.parent === b.parent) return 1;
-          // Different file (or different folder) -> larger gap.
-          if (a.parent?.parent === b.parent?.parent) return 3;
-          return 4;
+          // Base gap weighted by node sizes so larger leaves push neighbors out.
+          const sizeWeight = (n: typeof a) => {
+            if (n.data.kind !== "export") return 1;
+            return exportRadiusFor(n.data.id) / EXPORT_R_MIN;
+          };
+          const sw = (sizeWeight(a) + sizeWeight(b)) / 2;
+          if (a.parent === b.parent) return sw;
+          if (a.parent?.parent === b.parent?.parent) return 3 * sw;
+          return 4 * sw;
         });
       layout(h);
 
