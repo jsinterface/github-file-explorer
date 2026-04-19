@@ -513,6 +513,14 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       );
       folderArcSel.attr("stroke-opacity", (a) => (folders.has(a.id) ? FULL : DIM));
       refSel
+        .attr("stroke", (p) => {
+          const sId = p.s.node.data.id;
+          const tId = p.t.node.data.id;
+          // Outgoing from a target -> default color; incoming to a target -> inverse color.
+          if (targetIds.has(sId)) return "var(--color-chart-3)";
+          if (targetIds.has(tId)) return "var(--color-chart-5)";
+          return "var(--color-chart-3)";
+        })
         .attr("stroke-opacity", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
@@ -521,9 +529,9 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .attr("marker-end", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          return targetIds.has(sId) || targetIds.has(tId)
-            ? "url(#arrow-ref-full)"
-            : "url(#arrow-ref-dim)";
+          if (targetIds.has(sId)) return "url(#arrow-ref-full)";
+          if (targetIds.has(tId)) return "url(#arrow-ref-in)";
+          return "url(#arrow-ref-dim)";
         });
       node.style("opacity", (n) => {
         const nid = n.node.data.id;
