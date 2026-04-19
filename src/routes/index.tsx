@@ -304,7 +304,7 @@ function Index() {
                   function
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#ffff00" }} />
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
                   value
                 </span>
                 <span className="flex items-center gap-1.5">
