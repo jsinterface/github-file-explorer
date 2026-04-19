@@ -426,7 +426,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
     // ---------- Nodes ----------
     // Distinct colors per export kind: functions vs values.
-    const FUNCTION_COLOR = "#304ffe";
+    const FUNCTION_COLOR = "#536dfe";
     const VALUE_COLOR = "#ffff00";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
@@ -686,7 +686,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "#304ffe" }}
+            style={{ background: "#536dfe" }}
           />
           function
         </span>
