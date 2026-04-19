@@ -455,7 +455,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const node = container
       .append("g")
       .selectAll<SVGGElement, Placed>("g")
-      .data(placed.filter((p) => p.node.data.kind !== "folder"))
+      .data(placed)
       .join("g")
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
       .style("cursor", "pointer");
