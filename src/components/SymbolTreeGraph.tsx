@@ -883,6 +883,7 @@ export function SymbolTreeGraph({
     // All labels point radially outward (away from the chart center).
     node
       .append("text")
+      .attr("class", "node-label")
       .attr("transform", (d) => {
         const deg = (d.angle * 180) / Math.PI;
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
