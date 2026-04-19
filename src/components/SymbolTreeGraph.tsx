@@ -403,7 +403,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-chart-3)")
+      .attr("stroke", "#ffff00")
       .attr("stroke-width", 0.7)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
