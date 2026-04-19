@@ -82,7 +82,7 @@ export function analyzeFunctionInSource(
     return null;
   }
 
-  let bodyPath: NodePath | null = null;
+  let bodyPath: NodePath<t.Node> | null = null;
   const ownName = exportName === "default" ? null : exportName;
 
   traverse(ast, {
