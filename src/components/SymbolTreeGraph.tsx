@@ -314,17 +314,29 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "var(--color-chart-3)");
 
-    container
+    const refSel = container
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-chart-3)")
-      .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 0.7)
-      .selectAll("path")
+      .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
       .join("path")
       .attr("d", refPath)
+      .attr("stroke-opacity", 0.4)
       .attr("marker-end", "url(#arrow-ref-stg)");
+
+    // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
+    const outgoingByExport = new Map<string, Set<string>>();
+    const incomingByExport = new Map<string, Set<string>>();
+    refPairs.forEach((p) => {
+      const s = p.s.node.data.id;
+      const t = p.t.node.data.id;
+      if (!outgoingByExport.has(s)) outgoingByExport.set(s, new Set());
+      outgoingByExport.get(s)!.add(t);
+      if (!incomingByExport.has(t)) incomingByExport.set(t, new Set());
+      incomingByExport.get(t)!.add(s);
+    });
 
     // ---------- Nodes ----------
     const colorFor = (k: RawNode["kind"]) =>
