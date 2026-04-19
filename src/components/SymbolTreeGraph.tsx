@@ -429,8 +429,6 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const FULL = 1;
 
     function applyHighlight(d: Placed) {
-      const anc = leafAncestors.get(d.node.data.id);
-      if (!anc) return;
       const id = d.node.data.id;
       // Collect related export ids (outgoing + incoming refs).
       const relatedExports = new Set<string>([id]);
@@ -438,8 +436,9 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       incomingByExport.get(id)?.forEach((x) => relatedExports.add(x));
 
       // Union ancestor folders/links across self + related exports.
-      const folders = new Set(anc.folders);
-      const links = new Set(anc.links);
+      const anc = leafAncestors.get(id);
+      const folders = new Set<string>(anc?.folders ?? []);
+      const links = new Set<string>(anc?.links ?? []);
       relatedExports.forEach((rid) => {
         const a = leafAncestors.get(rid);
         if (!a) return;
@@ -454,7 +453,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       refSel.attr("stroke-opacity", (p) => {
         const sId = p.s.node.data.id;
         const tId = p.t.node.data.id;
-        return sId === id || tId === id ? FULL : DIM;
+        return relatedExports.has(sId) || relatedExports.has(tId) ? FULL : DIM;
       });
       node.style("opacity", (n) => (relatedExports.has(n.node.data.id) || n.node.data.id === id ? FULL : DIM));
     }
