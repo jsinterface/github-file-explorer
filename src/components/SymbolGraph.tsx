@@ -108,16 +108,78 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
 
     node.append("title").text((d) => `${d.label} · in:${indegree.get(d.id) ?? 0}`);
 
-    // Only label function nodes to keep it readable
-    node
-      .filter((d) => d.kind === "function")
-      .append("text")
-      .attr("x", 6)
-      .attr("dy", "0.32em")
-      .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", 8)
-      .attr("fill", "var(--color-foreground)")
-      .text((d) => d.label);
+    // Wrap a label into lines that fit inside a circle of given radius.
+    // Uses a rough char-width estimate and constrains lines so the stacked
+    // block of text fits within the inscribed square of the circle.
+    const CHAR_W = 0.6; // width factor relative to font-size for monospace
+    const LINE_H = 1.1;
+
+    function wrapToCircle(text: string, radius: number): { lines: string[]; fontSize: number } {
+      // Pick a font size proportional to radius, clamped for legibility.
+      const fontSize = Math.max(5, Math.min(11, radius * 0.55));
+      // Inscribed square side ≈ radius * sqrt(2); leave small padding.
+      const maxWidth = Math.max(8, radius * 1.35);
+      const charsPerLine = Math.max(2, Math.floor(maxWidth / (fontSize * CHAR_W)));
+      const maxLines = Math.max(1, Math.floor((radius * 1.35) / (fontSize * LINE_H)));
+
+      // Tokenize on common identifier separators while keeping them as breakpoints.
+      const tokens = text.split(/([\/:_\-.])/).filter(Boolean);
+      const lines: string[] = [];
+      let current = "";
+      const pushCurrent = () => {
+        if (current) lines.push(current);
+        current = "";
+      };
+
+      for (const tok of tokens) {
+        if ((current + tok).length <= charsPerLine) {
+          current += tok;
+        } else {
+          if (current) pushCurrent();
+          // Hard-break tokens that exceed a single line
+          let rest = tok;
+          while (rest.length > charsPerLine) {
+            lines.push(rest.slice(0, charsPerLine));
+            rest = rest.slice(charsPerLine);
+          }
+          current = rest;
+        }
+        if (lines.length >= maxLines) break;
+      }
+      if (lines.length < maxLines && current) pushCurrent();
+
+      let out = lines.slice(0, maxLines);
+      if (out.length === 0) out = [text.slice(0, charsPerLine)];
+      // Mark truncation in the last line if we cut content
+      const usedChars = out.join("").length;
+      if (usedChars < text.replace(/[\/:_\-.]/g, "").length + (text.match(/[\/:_\-.]/g)?.length ?? 0)) {
+        const last = out[out.length - 1];
+        out[out.length - 1] =
+          last.length > charsPerLine - 1 ? last.slice(0, charsPerLine - 1) + "…" : last + "…";
+      }
+      return { lines: out, fontSize };
+    }
+
+    const labelGroup = node.append("g").attr("text-anchor", "middle");
+    labelGroup.each(function (d) {
+      const r = radiusFor(d.id, d.kind);
+      const { lines, fontSize } = wrapToCircle(d.label, r);
+      const totalH = (lines.length - 1) * fontSize * LINE_H;
+      const startY = -totalH / 2;
+      const sel = d3.select(this);
+      lines.forEach((ln, i) => {
+        sel
+          .append("text")
+          .attr("x", 0)
+          .attr("y", startY + i * fontSize * LINE_H)
+          .attr("dy", "0.32em")
+          .attr("font-family", "ui-monospace, monospace")
+          .attr("font-size", fontSize)
+          .attr("fill", "var(--color-background)")
+          .attr("pointer-events", "none")
+          .text(ln);
+      });
+    });
 
     const simulation = d3
       .forceSimulation<SimNode>(nodes)
@@ -131,7 +193,7 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
       )
       .force("charge", d3.forceManyBody().strength(-40))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collide", d3.forceCollide(6))
+      .force("collide", d3.forceCollide<SimNode>((d) => radiusFor(d.id, d.kind) + 1))
       .on("tick", () => {
         link
           .attr("x1", (d) => (d.source as SimNode).x!)
