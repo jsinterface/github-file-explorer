@@ -122,9 +122,10 @@ export function SymbolTreeGraph({
     speedRef.current = speed;
   }, [speed]);
   const BASE_STEP_MS = 1500;
-  const stepMs = () => BASE_STEP_MS / speedRef.current;
+  const stepMs = () => (speedRef.current <= 0 ? Infinity : BASE_STEP_MS / speedRef.current);
   const sleep = (ms: number) =>
     new Promise<void>((resolve) => {
+      if (!isFinite(ms)) return; // paused: never resolve until component cancels
       window.setTimeout(resolve, ms);
     });
 
@@ -1028,7 +1029,7 @@ export function SymbolTreeGraph({
                 <span className="text-muted-foreground">speed</span>
                 <input
                   type="range"
-                  min={0.25}
+                  min={0}
                   max={4}
                   step={0.25}
                   value={speed}
