@@ -213,6 +213,7 @@ function Index() {
                 <TabsTrigger value="graph">Files</TabsTrigger>
                 <TabsTrigger value="imports">Imports</TabsTrigger>
                 <TabsTrigger value="symbols">Symbols</TabsTrigger>
+                <TabsTrigger value="symbolsJson">Symbols JSON</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -221,7 +222,7 @@ function Index() {
               ? "Loading…"
               : view === "imports"
                 ? "Analyze imports"
-                : view === "symbols"
+                : view === "symbols" || view === "symbolsJson"
                   ? "Analyze symbols"
                   : "Fetch tree"}
           </Button>
