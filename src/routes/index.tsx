@@ -141,6 +141,8 @@ function Index() {
   const [result, setResult] = useState<FetchResult | null>(null);
   const [importGraph, setImportGraph] = useState<ImportGraph | null>(null);
   const [symbolGraph, setSymbolGraph] = useState<SymbolGraph | null>(null);
+  const [inputJson, setInputJson] = useState<string>("{}");
+  const [repoMeta, setRepoMeta] = useState<{ owner: string; repo: string; branch: string } | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -164,7 +166,7 @@ function Index() {
       if (!repoRes.ok) throw new Error(`Repository not found (${repoRes.status})`);
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
-
+      setRepoMeta({ owner: parsed.owner, repo: parsed.repo, branch });
       if (view === "imports" || view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") {
         if (view === "imports") {
           const graph = await buildImportGraph(
@@ -280,6 +282,23 @@ function Index() {
           </Button>
         </form>
 
+        {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
+          <div className="mt-3">
+            <Label htmlFor="input-json" className="mb-1.5 block">
+              Input JSON (passed as the first argument when you click a function)
+            </Label>
+            <textarea
+              id="input-json"
+              value={inputJson}
+              onChange={(e) => setInputJson(e.target.value)}
+              spellCheck={false}
+              className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              rows={4}
+              placeholder='{"name": "world"}'
+            />
+          </div>
+        )}
+
         {loading && progress && (
           <div className="mt-6 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
             {progress}
@@ -329,7 +348,11 @@ function Index() {
               </pre>
             )}
             {view === "symbolTree" && symbolGraph && (
-              <SymbolTreeGraph data={symbolGraphToTree(symbolGraph)} />
+              <SymbolTreeGraph
+                data={symbolGraphToTree(symbolGraph)}
+                repo={repoMeta}
+                inputJson={inputJson}
+              />
             )}
           </div>
         )}
