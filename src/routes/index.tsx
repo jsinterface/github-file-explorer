@@ -300,7 +300,7 @@ function Index() {
             {view === "symbols" && symbolGraph && <SymbolGraphView data={symbolGraph} />}
             {view === "symbolsJson" && symbolGraph && (
               <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
-                {JSON.stringify(symbolGraphToRecord(symbolGraph), null, 2)}
+                {JSON.stringify(symbolGraphToTree(symbolGraph), null, 2)}
               </pre>
             )}
           </div>
