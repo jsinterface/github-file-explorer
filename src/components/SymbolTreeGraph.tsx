@@ -336,6 +336,20 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("fill", "var(--color-chart-3)")
       .attr("fill-opacity", 0.12);
 
+    // Arrow marker for incoming highlighted edges (inverse color).
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-in")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-chart-5)");
+
     const refSel = container
       .append("g")
       .attr("fill", "none")
@@ -499,6 +513,14 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       );
       folderArcSel.attr("stroke-opacity", (a) => (folders.has(a.id) ? FULL : DIM));
       refSel
+        .attr("stroke", (p) => {
+          const sId = p.s.node.data.id;
+          const tId = p.t.node.data.id;
+          // Outgoing from a target -> default color; incoming to a target -> inverse color.
+          if (targetIds.has(sId)) return "var(--color-chart-3)";
+          if (targetIds.has(tId)) return "var(--color-chart-5)";
+          return "var(--color-chart-3)";
+        })
         .attr("stroke-opacity", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
@@ -507,9 +529,9 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .attr("marker-end", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          return targetIds.has(sId) || targetIds.has(tId)
-            ? "url(#arrow-ref-full)"
-            : "url(#arrow-ref-dim)";
+          if (targetIds.has(sId)) return "url(#arrow-ref-full)";
+          if (targetIds.has(tId)) return "url(#arrow-ref-in)";
+          return "url(#arrow-ref-dim)";
         });
       node.style("opacity", (n) => {
         const nid = n.node.data.id;
@@ -520,7 +542,10 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     function clearHighlight() {
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
-      refSel.attr("stroke-opacity", 0.4).attr("marker-end", "url(#arrow-ref-full)");
+      refSel
+        .attr("stroke", "var(--color-chart-3)")
+        .attr("stroke-opacity", 0.4)
+        .attr("marker-end", "url(#arrow-ref-full)");
       node.style("opacity", FULL);
     }
 
