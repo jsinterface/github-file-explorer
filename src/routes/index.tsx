@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileGraph } from "@/components/FileGraph";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 import { ImportGraphView } from "@/components/ImportGraph";
 import { SymbolGraphView } from "@/components/SymbolGraph";
 import { SymbolLoomView } from "@/components/SymbolLoom";
@@ -294,7 +294,6 @@ function Index() {
           )}
           {/* Hidden submit so Enter key triggers form submission */}
           <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
-          <ThemeToggle />
         </form>
 
         {/* Status messages */}
