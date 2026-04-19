@@ -1067,6 +1067,31 @@ export function SymbolTreeGraph({
             }}
           />
         )}
+        {stack.length > 0 && (
+          <div className="pointer-events-none absolute bottom-20 left-4 z-20 flex max-w-sm flex-col gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+            {stack.map((f, i) => {
+              const total = Math.max(1, f.edgeOrder.length);
+              const done = f.direction === "returning" ? f.step + 1 : f.step;
+              const pct = Math.max(0, Math.min(100, (done / total) * 100));
+              return (
+                <div key={`${f.sourceExportId}-${i}`} className="flex flex-col gap-0.5">
+                  <div className="flex items-center justify-between gap-2 font-mono text-[10px]">
+                    <span className="truncate text-muted-foreground">{f.filePath}</span>
+                    <span className="shrink-0 font-semibold text-foreground">
+                      {f.trace.exportName}()
+                    </span>
+                  </div>
+                  <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${pct}%`, background: "#536dfe" }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
         <svg
           ref={ref}
           className="relative h-full w-full [&_*]:pointer-events-auto"
