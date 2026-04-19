@@ -909,26 +909,25 @@ export function SymbolTreeGraph({
       const startPt = path.getPointAtLength(0);
       const endPt = path.getPointAtLength(fwdLen);
 
-      // Return arc: from endPt back to startPt, with control points
-      // pushed radially outward well beyond the outer ring so the curve
-      // sweeps around the outside of the symbol ring.
-      const ringR = outerR + 60; // clearance outside outer ring
-      const angT = Math.atan2(endPt.y - cy, endPt.x - cx);
-      const angS = Math.atan2(startPt.y - cy, startPt.x - cx);
-      // Choose the shorter arc direction for the control points.
-      let delta = angS - angT;
-      while (delta > Math.PI) delta -= 2 * Math.PI;
-      while (delta < -Math.PI) delta += 2 * Math.PI;
-      // Offset controls slightly along the ring direction so the curve
-      // forms a smooth loop rather than a straight bow.
-      const sign = delta >= 0 ? 1 : -1;
-      const tangentOffset = Math.min(Math.abs(delta), Math.PI / 3) * 0.6;
-      const c1Ang = angT + sign * tangentOffset;
-      const c2Ang = angS - sign * tangentOffset;
-      const c1x = cx + ringR * Math.cos(c1Ang);
-      const c1y = cy + ringR * Math.sin(c1Ang);
-      const c2x = cx + ringR * Math.cos(c2Ang);
-      const c2y = cy + ringR * Math.sin(c2Ang);
+      // Return arc: extrapolate the reference edge outward. The chord's
+      // tangent at each endpoint points radially outward from center
+      // (controls were at center), so continuing along that direction
+      // sweeps the traveler out past the ring before curving back.
+      const ringR = outerR + 120; // how far outside the ring the loop bulges
+      const rT = Math.hypot(endPt.x - cx, endPt.y - cy) || 1;
+      const rS = Math.hypot(startPt.x - cx, startPt.y - cy) || 1;
+      // Unit radial vectors at target and source.
+      const uTx = (endPt.x - cx) / rT;
+      const uTy = (endPt.y - cy) / rT;
+      const uSx = (startPt.x - cx) / rS;
+      const uSy = (startPt.y - cy) / rS;
+      // Push controls far out along each endpoint's outward radial — this
+      // makes the curve leave the target tangentially and re-enter the
+      // source tangentially, producing a round loop outside the ring.
+      const c1x = cx + uTx * ringR;
+      const c1y = cy + uTy * ringR;
+      const c2x = cx + uSx * ringR;
+      const c2y = cy + uSy * ringR;
 
       // Build a hidden combined loop path: forward edge "d" + return cubic.
       const fwdD = path.getAttribute("d") ?? "";
