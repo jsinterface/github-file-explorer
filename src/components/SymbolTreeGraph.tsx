@@ -383,17 +383,17 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     container
       .append("g")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", (d: FolderArc) => fontSizeFor(d.radius))
       .attr("fill", "var(--color-chart-1)")
       .selectAll("text")
       .data(folderArcs)
       .join("text")
       .attr("dy", "0.32em")
+      .attr("font-size", (d) => fontSizeFor(d.radius))
       .append("textPath")
-      .attr("href", (d: FolderArc) => `#folder-arc-label-${safeId(d.id)}`)
+      .attr("href", (d) => `#folder-arc-label-${safeId(d.id)}`)
       .attr("startOffset", "50%")
       .attr("text-anchor", "middle")
-      .text((d: FolderArc) => d.name);
+      .text((d) => d.name);
 
     const node = container
       .append("g")
