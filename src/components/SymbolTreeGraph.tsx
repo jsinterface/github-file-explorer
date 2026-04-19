@@ -698,7 +698,7 @@ export function SymbolTreeGraph({
     const folderArcSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-chart-1)")
+      .attr("stroke", "var(--color-muted-foreground)")
       .attr("stroke-width", 2.5)
       .attr("stroke-linecap", "round")
       .attr("transform", `translate(${cx},${cy})`)
