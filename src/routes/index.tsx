@@ -294,7 +294,6 @@ function Index() {
           )}
           {/* Hidden submit so Enter key triggers form submission */}
           <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
-          <ThemeToggle />
         </form>
 
         {/* Status messages */}
