@@ -820,7 +820,52 @@ export function SymbolTreeGraph({
       svg.on(".zoom", null);
       svg.selectAll("*").remove();
     };
-  }, [built]);
+  }, [built, handleExportClick]);
+
+  // Animate the highlighted edge as the trace step advances.
+  useEffect(() => {
+    const svg = ref.current;
+    if (!svg) return;
+    const paths = svg.querySelectorAll<SVGPathElement>("path[data-src]");
+    if (!run) {
+      paths.forEach((p) => {
+        p.style.stroke = "";
+        p.style.strokeWidth = "";
+        p.style.strokeOpacity = "";
+        p.style.filter = "";
+      });
+      return;
+    }
+    const activeTarget = run.step >= 0 ? run.edgeOrder[run.step] : null;
+    const visited = new Set(run.edgeOrder.slice(0, Math.max(0, run.step)));
+    paths.forEach((p) => {
+      const src = p.getAttribute("data-src");
+      const tgt = p.getAttribute("data-tgt");
+      if (src !== run.sourceExportId) {
+        p.style.strokeOpacity = "0.05";
+        p.style.stroke = "";
+        p.style.strokeWidth = "";
+        p.style.filter = "";
+        return;
+      }
+      if (tgt === activeTarget) {
+        p.style.stroke = "#ffff00";
+        p.style.strokeWidth = "2.5";
+        p.style.strokeOpacity = "1";
+        p.style.filter = "drop-shadow(0 0 4px #ffff00)";
+      } else if (tgt && visited.has(tgt)) {
+        p.style.stroke = "#536dfe";
+        p.style.strokeWidth = "1.4";
+        p.style.strokeOpacity = "0.9";
+        p.style.filter = "";
+      } else {
+        p.style.stroke = "";
+        p.style.strokeWidth = "";
+        p.style.strokeOpacity = "0.4";
+        p.style.filter = "";
+      }
+    });
+  }, [run]);
 
   const refCount = Array.from(built.refsByExport.values()).reduce(
     (a, b) => a + b.length,
