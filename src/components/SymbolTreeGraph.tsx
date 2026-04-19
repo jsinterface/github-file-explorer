@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import * as d3 from "d3";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Tornado } from "lucide-react";
 import { analyzeFunctionInSource, fetchRawFile, loadModuleFromSource, type FunctionTrace } from "@/lib/runFunction";
 import { CodeTracePanel } from "./CodeTracePanel";
 
@@ -117,6 +117,12 @@ export function SymbolTreeGraph({
   // Animation speed multiplier: higher = faster. 1 = base 1500ms per step.
   const [speed, setSpeed] = useState(1);
   const [stackExpanded, setStackExpanded] = useState(false);
+  // When true, do not start new animations recursively for subsequent function references.
+  const [noRecurse, setNoRecurse] = useState(false);
+  const noRecurseRef = useRef(noRecurse);
+  useEffect(() => {
+    noRecurseRef.current = noRecurse;
+  }, [noRecurse]);
   const speedRef = useRef(speed);
   useEffect(() => {
     speedRef.current = speed;
@@ -269,7 +275,7 @@ export function SymbolTreeGraph({
         // Recurse if target is a known function with its own refs and not already on the stack.
         const targetIsKnown =
           built.refsByExport.has(targetId) && built.kindById.get(targetId) === "function";
-        if (targetIsKnown && !nextPath.has(targetId)) {
+        if (targetIsKnown && !nextPath.has(targetId) && !noRecurseRef.current) {
           await animateFrame(targetId, nextPath, false);
           if (token.cancelled) return;
         }
@@ -1063,6 +1069,22 @@ export function SymbolTreeGraph({
                   {speed.toFixed(2)}x
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setNoRecurse((v) => !v)}
+                className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                aria-label={noRecurse ? "enable recursion" : "disable recursion"}
+                aria-pressed={noRecurse}
+                title={noRecurse ? "Enable recursive animation" : "Disable recursive animation"}
+              >
+                <Tornado className="h-4 w-4" />
+                {!noRecurse && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current"
+                  />
+                )}
+              </button>
               {stack.length > 2 && (
                 <button
                   type="button"
