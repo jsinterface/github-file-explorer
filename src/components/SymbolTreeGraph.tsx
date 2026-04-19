@@ -386,7 +386,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       ...Array.from(incomingByExport.values()).map((s) => s.size),
     );
     const exportColorScale = d3
-      .scaleSequential<string>((t) => d3.interpolateViridis(0.15 + t * 0.8))
+      .scaleSequential<string>((t) => d3.interpolateTurbo(0.1 + t * 0.85))
       .domain([0, Math.log1p(maxIndegree)]);
 
     const colorFor = (n: RawNode) => {
