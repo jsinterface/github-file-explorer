@@ -501,7 +501,7 @@ export function SymbolTreeGraph({
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--ref-out-color)");
+      .attr("fill", "#5c6bc0");
 
     // Arrow marker for dimmed opacity
     defs
@@ -575,7 +575,7 @@ export function SymbolTreeGraph({
     // ---------- Nodes ----------
     // Distinct colors per export kind: functions vs values.
     const FUNCTION_COLOR = "#536dfe";
-    const VALUE_COLOR = "var(--color-muted-foreground)";
+    const VALUE_COLOR = "#6d4c41";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-muted-foreground)";
@@ -729,7 +729,7 @@ export function SymbolTreeGraph({
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
           // Outgoing from a target = referenced edge; incoming to a target = referencing edge.
-          if (targetIds.has(sId)) return "var(--ref-out-color)";
+          if (targetIds.has(sId)) return "#5c6bc0";
           if (targetIds.has(tId)) return "#536dfe";
           return "var(--color-muted-foreground)";
         })

@@ -273,7 +273,7 @@ function Index() {
                   function
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#6d4c41" }} />
                   value
                 </span>
                 <span className="flex items-center gap-1.5">
@@ -281,7 +281,7 @@ function Index() {
                   reference
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block h-3 w-0.5" style={{ background: "var(--ref-out-color)" }} />
+                  <span className="inline-block h-3 w-0.5" style={{ background: "#5c6bc0" }} />
                   referenced
                 </span>
                 <span className="flex items-center gap-1.5">
