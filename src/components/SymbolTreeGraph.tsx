@@ -439,6 +439,19 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("text-anchor", "middle")
       .text((d) => d.name);
 
+    // Map each file/folder id -> set of export ids contained within it.
+    const exportsByContainer = new Map<string, Set<string>>();
+    hierarchies.forEach((h) => {
+      h.descendants().forEach((n) => {
+        if (n.data.kind === "export") return;
+        const exports = new Set<string>();
+        n.descendants().forEach((d) => {
+          if (d.data.kind === "export") exports.add(d.data.id);
+        });
+        exportsByContainer.set(n.data.id, exports);
+      });
+    });
+
     const node = container
       .append("g")
       .selectAll<SVGGElement, Placed>("g")
@@ -450,18 +463,27 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const DIM = 0.12;
     const FULL = 1;
 
-    function applyHighlight(d: Placed) {
-      const id = d.node.data.id;
-      // Collect related export ids (outgoing + incoming refs).
-      const relatedExports = new Set<string>([id]);
-      outgoingByExport.get(id)?.forEach((x) => relatedExports.add(x));
-      incomingByExport.get(id)?.forEach((x) => relatedExports.add(x));
+    // targetIds: export ids this hover "owns" (1 for an export, all under a file/folder).
+    function applyHighlight(targetIds: Set<string>) {
+      if (targetIds.size === 0) return;
+      // relatedExports = targets + their referenced/referencing exports.
+      const relatedExports = new Set<string>(targetIds);
+      targetIds.forEach((id) => {
+        outgoingByExport.get(id)?.forEach((x) => relatedExports.add(x));
+        incomingByExport.get(id)?.forEach((x) => relatedExports.add(x));
+      });
 
-      // Only the hovered node's own ancestor folders/files/links are highlighted.
-      const anc = leafAncestors.get(id);
-      const folders = new Set<string>(anc?.folders ?? []);
-      const files = new Set<string>(anc?.files ?? []);
-      const links = new Set<string>(anc?.links ?? []);
+      // Highlight only the owner branch(es): union of ancestors of each target.
+      const folders = new Set<string>();
+      const files = new Set<string>();
+      const links = new Set<string>();
+      targetIds.forEach((tid) => {
+        const a = leafAncestors.get(tid);
+        if (!a) return;
+        a.folders.forEach((f) => folders.add(f));
+        a.files.forEach((f) => files.add(f));
+        a.links.forEach((l) => links.add(l));
+      });
 
       linkSel.attr("stroke-opacity", (l) =>
         links.has(linkKey(l.s.node.data.id, l.t.node.data.id)) ? FULL : DIM,
@@ -471,12 +493,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .attr("stroke-opacity", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          return sId === id || tId === id ? FULL : DIM;
+          return targetIds.has(sId) || targetIds.has(tId) ? FULL : DIM;
         })
         .attr("marker-end", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          return sId === id || tId === id
+          return targetIds.has(sId) || targetIds.has(tId)
             ? "url(#arrow-ref-full)"
             : "url(#arrow-ref-dim)";
         });
@@ -493,7 +515,26 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       node.style("opacity", FULL);
     }
 
-    node.on("mouseenter", (_e, d) => applyHighlight(d)).on("mouseleave", clearHighlight);
+    node
+      .on("mouseenter", (_e, d) => {
+        if (d.node.data.kind === "export") {
+          applyHighlight(new Set([d.node.data.id]));
+        } else {
+          const exports = exportsByContainer.get(d.node.data.id) ?? new Set();
+          applyHighlight(exports);
+        }
+      })
+      .on("mouseleave", clearHighlight);
+
+    // Folder arcs hoverable too.
+    folderArcSel
+      .style("cursor", "pointer")
+      .style("pointer-events", "stroke")
+      .on("mouseenter", (_e, a) => {
+        const exports = exportsByContainer.get(a.id) ?? new Set();
+        applyHighlight(exports);
+      })
+      .on("mouseleave", clearHighlight);
 
     node
       .append("circle")
