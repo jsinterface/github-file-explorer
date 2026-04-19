@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Github } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -323,6 +324,7 @@ function Index() {
           className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 self-center rounded-full border border-border px-2 py-2 shadow-lg backdrop-blur-md"
           style={{ background: "color-mix(in oklab, var(--surface-elevated) 85%, transparent)" }}
         >
+          <Github className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <Input
             id="repo"
             value={input}
