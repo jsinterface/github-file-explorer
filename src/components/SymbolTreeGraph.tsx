@@ -140,10 +140,18 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
 
       h.each((n) => {
         const angle = a0 + (n.x ?? 0);
-        // depth normalized 0..1 (0 = root, 1 = deepest)
-        const depthFrac = (n.depth ?? 0) / maxDepth;
-        // Map: root (depth 0) -> outerR; deepest -> innerR.
-        const radius = outerR - depthFrac * (outerR - innerR);
+        let radius: number;
+        if (n.data.kind === "export") {
+          // All exports pinned to the innermost ring.
+          radius = innerR;
+        } else {
+          // Folders/files distributed by depth between outerR and innerR,
+          // reserving the innermost ring exclusively for exports.
+          const nonExportMaxDepth = Math.max(1, maxDepth - 1);
+          const depthFrac = Math.min(1, (n.depth ?? 0) / nonExportMaxDepth);
+          const step = (outerR - innerR) / (nonExportMaxDepth + 1);
+          radius = outerR - depthFrac * (outerR - innerR - step);
+        }
         const px = cx + radius * Math.cos(angle);
         const py = cy + radius * Math.sin(angle);
         const p: Placed = {
