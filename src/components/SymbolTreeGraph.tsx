@@ -862,8 +862,8 @@ export function SymbolTreeGraph({
   const exportCount = built.refsByExport.size;
 
   return (
-    <div className="rounded-md border border-border">
-      <div className="relative max-h-[80vh] overflow-hidden">
+    <div className="flex h-full flex-col">
+      <div className="relative flex-1 overflow-hidden">
         {run && (
           <CodeTracePanel
             trace={run.trace}
@@ -875,8 +875,8 @@ export function SymbolTreeGraph({
         )}
         <svg
           ref={ref}
-          className="relative w-full [&_*]:pointer-events-auto"
-          style={{ height: "75vh", pointerEvents: "none" }}
+          className="relative h-full w-full [&_*]:pointer-events-auto"
+          style={{ pointerEvents: "none" }}
         />
       </div>
       <div className="flex flex-wrap items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
