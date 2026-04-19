@@ -544,6 +544,8 @@ export function SymbolTreeGraph({
       .join("path")
       .attr("d", refPath)
       .attr("stroke-opacity", 1)
+      .attr("data-src", (p) => p.s.node.data.id)
+      .attr("data-tgt", (p) => p.t.node.data.id)
       .attr("marker-end", "url(#arrow-ref-default)");
 
     // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
