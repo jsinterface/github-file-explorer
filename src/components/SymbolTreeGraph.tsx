@@ -383,12 +383,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     container
       .append("g")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", 9)
       .attr("fill", "var(--color-chart-1)")
       .selectAll("text")
       .data(folderArcs)
       .join("text")
       .attr("dy", "0.32em")
+      .attr("font-size", (d) => ringFontSize(d.depth, 9))
       .append("textPath")
       .attr("href", (d) => `#folder-arc-label-${safeId(d.id)}`)
       .attr("startOffset", "50%")
