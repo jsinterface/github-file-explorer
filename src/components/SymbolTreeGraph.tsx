@@ -167,11 +167,53 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         idToPlaced.set(n.data.id, p);
       });
 
-      // Containment links
+      // Containment links — skip any link touching a folder; folders are
+      // rendered as ring arcs spanning their descendants instead.
       h.links().forEach((l) => {
+        if (
+          l.source.data.kind === "folder" ||
+          l.target.data.kind === "folder"
+        ) {
+          return;
+        }
         const s = idToPlaced.get(l.source.data.id);
         const t = idToPlaced.get(l.target.data.id);
         if (s && t) allLinks.push({ s, t });
+      });
+    });
+
+    // ---------- Folder arcs ----------
+    // For each folder node, compute the angular extent of all its descendant
+    // file/export leaves and render an arc at the folder's radius.
+    type FolderArc = {
+      id: string;
+      a0: number;
+      a1: number;
+      radius: number;
+      name: string;
+    };
+    const folderArcs: FolderArc[] = [];
+    hierarchies.forEach((h) => {
+      h.descendants().forEach((n) => {
+        if (n.data.kind !== "folder") return;
+        const fp = idToPlaced.get(n.data.id);
+        if (!fp) return;
+        const leafAngles: number[] = [];
+        n.descendants().forEach((d) => {
+          if (d.data.kind === "folder") return;
+          const dp = idToPlaced.get(d.data.id);
+          if (dp) leafAngles.push(dp.angle);
+        });
+        if (leafAngles.length === 0) return;
+        const a0 = Math.min(...leafAngles);
+        const a1 = Math.max(...leafAngles);
+        folderArcs.push({
+          id: n.data.id,
+          a0,
+          a1,
+          radius: fp.radius,
+          name: n.data.name,
+        });
       });
     });
 
