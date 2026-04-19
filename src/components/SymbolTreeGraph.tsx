@@ -889,12 +889,59 @@ export function SymbolTreeGraph({
       }
     });
 
-    // Spawn the green traveler on the active path — one full traversal per step.
+    // Spawn the green traveler — full circular loop per step:
+    // forward along the chord (source -> target), then a bezier arc
+    // returning OUTSIDE the symbol ring back to the source.
     // Stops when the function execution completes.
     if (activePath && !run.completed) {
       const path = activePath as SVGPathElement;
-      const totalLen = path.getTotalLength();
       const ns = "http://www.w3.org/2000/svg";
+
+      // Derive outer ring radius from viewBox: size = (outerR + 60) * 2.
+      const vb = svg.viewBox.baseVal;
+      const outerR = vb.width / 2 - 60;
+      // Center of the chart in viewBox coords (chart is centered on 0,0).
+      const cx = 0;
+      const cy = 0;
+
+      // Endpoints of the forward edge.
+      const fwdLen = path.getTotalLength();
+      const startPt = path.getPointAtLength(0);
+      const endPt = path.getPointAtLength(fwdLen);
+
+      // Return arc: from endPt back to startPt, with control points
+      // pushed radially outward well beyond the outer ring so the curve
+      // sweeps around the outside of the symbol ring.
+      const ringR = outerR + 60; // clearance outside outer ring
+      const angT = Math.atan2(endPt.y - cy, endPt.x - cx);
+      const angS = Math.atan2(startPt.y - cy, startPt.x - cx);
+      // Choose the shorter arc direction for the control points.
+      let delta = angS - angT;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      // Offset controls slightly along the ring direction so the curve
+      // forms a smooth loop rather than a straight bow.
+      const sign = delta >= 0 ? 1 : -1;
+      const tangentOffset = Math.min(Math.abs(delta), Math.PI / 3) * 0.6;
+      const c1Ang = angT + sign * tangentOffset;
+      const c2Ang = angS - sign * tangentOffset;
+      const c1x = cx + ringR * Math.cos(c1Ang);
+      const c1y = cy + ringR * Math.sin(c1Ang);
+      const c2x = cx + ringR * Math.cos(c2Ang);
+      const c2y = cy + ringR * Math.sin(c2Ang);
+
+      // Build a hidden combined loop path: forward edge "d" + return cubic.
+      const fwdD = path.getAttribute("d") ?? "";
+      const loopD = `${fwdD} C${c1x},${c1y} ${c2x},${c2y} ${startPt.x},${startPt.y}`;
+      const loopPath = document.createElementNS(ns, "path");
+      loopPath.setAttribute("class", "edge-traveler");
+      loopPath.setAttribute("d", loopD);
+      loopPath.setAttribute("fill", "none");
+      loopPath.setAttribute("stroke", "none");
+      loopPath.style.pointerEvents = "none";
+      path.parentNode?.appendChild(loopPath);
+      const loopLen = loopPath.getTotalLength();
+
       const traveler = document.createElementNS(ns, "circle");
       traveler.setAttribute("class", "edge-traveler");
       traveler.setAttribute("r", "4");
@@ -905,11 +952,11 @@ export function SymbolTreeGraph({
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
-      const duration = 1400; // matches step interval; one full pass per step
+      const duration = 1400; // matches step interval; one full loop per step
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
-        const pt = path.getPointAtLength(t * totalLen);
+        const pt = loopPath.getPointAtLength(t * loopLen);
         traveler.setAttribute("cx", String(pt.x));
         traveler.setAttribute("cy", String(pt.y));
         if (t < 1) {
