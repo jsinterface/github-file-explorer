@@ -314,10 +314,32 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const radiusFor = (k: RawNode["kind"]) =>
       k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
 
+    // Folder ring arcs (drawn before nodes so node circles sit on top).
+    const arcGen = d3
+      .arc<FolderArc>()
+      .innerRadius((d) => d.radius)
+      .outerRadius((d) => d.radius)
+      .startAngle((d) => d.a0 + Math.PI / 2)
+      .endAngle((d) => d.a1 + Math.PI / 2);
+
+    container
+      .append("g")
+      .attr("fill", "none")
+      .attr("stroke", "var(--color-chart-1)")
+      .attr("stroke-width", 2.5)
+      .attr("stroke-linecap", "round")
+      .attr("transform", `translate(${cx},${cy})`)
+      .selectAll("path")
+      .data(folderArcs)
+      .join("path")
+      .attr("d", (d) => arcGen(d))
+      .append("title")
+      .text((d) => `folder: ${d.name}`);
+
     const node = container
       .append("g")
       .selectAll("g")
-      .data(placed)
+      .data(placed.filter((p) => p.node.data.kind !== "folder"))
       .join("g")
       .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
