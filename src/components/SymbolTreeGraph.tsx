@@ -439,18 +439,37 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
+    // Per-file outdegree = total outgoing references from all exports in the file.
+    const outdegByFile = new Map<string, number>();
+    for (const [exportId, refs] of refsByExport) {
+      // exportId format: "export:{path}#{name}"
+      const path = exportId.slice("export:".length).split("#")[0];
+      const fileId = `file:${path}`;
+      outdegByFile.set(fileId, (outdegByFile.get(fileId) ?? 0) + refs.length);
+    }
+    const maxFileOutdeg = Math.max(1, ...outdegByFile.values());
+
+    const FILE_R_MIN = 3.5;
+    const FILE_R_MAX = 12;
+    const fileRadiusFor = (id: string) => {
+      const d = outdegByFile.get(id) ?? 0;
+      const t = Math.log1p(d) / Math.log1p(maxFileOutdeg);
+      return FILE_R_MIN + t * (FILE_R_MAX - FILE_R_MIN);
+    };
+
     // Distinct colors per export kind: functions vs values.
     const FUNCTION_COLOR = "#536dfe";
     const VALUE_COLOR = "#ffff00";
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
-      if (n.kind === "file") return "var(--color-chart-2)";
+      // File color matches the referenced (outgoing) edge color.
+      if (n.kind === "file") return "var(--ref-out-color)";
       return n.exportKind === "function" ? FUNCTION_COLOR : VALUE_COLOR;
     };
 
     const radiusFor = (n: RawNode) => {
       if (n.kind === "folder") return 4;
-      if (n.kind === "file") return 3.5;
+      if (n.kind === "file") return fileRadiusFor(n.id);
       return exportRadiusFor(n.id);
     };
 
@@ -703,7 +722,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: "var(--color-chart-2)" }}
+            style={{ background: "var(--ref-out-color)" }}
           />
           file
         </span>
