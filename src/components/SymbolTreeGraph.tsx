@@ -700,7 +700,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-0.5"
-            style={{ background: "var(--color-chart-3)" }}
+            style={{ background: "#ffff00" }}
           />
           reference
         </span>
