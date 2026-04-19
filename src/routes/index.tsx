@@ -71,7 +71,19 @@ function buildTree(items: TreeItem[]): Record<string, NestedNode> {
   return root;
 }
 
-type ViewMode = "json" | "graph" | "imports" | "symbols";
+type ViewMode = "json" | "graph" | "imports" | "symbols" | "symbolsJson";
+
+function symbolGraphToRecord(g: SymbolGraph): Record<string, string[]> {
+  const idToLabel = new Map(g.nodes.map((n) => [n.id, n.label]));
+  const out: Record<string, string[]> = {};
+  for (const n of g.nodes) out[n.label] = [];
+  for (const l of g.links) {
+    const s = idToLabel.get(typeof l.source === "string" ? l.source : (l.source as { id: string }).id);
+    const t = idToLabel.get(typeof l.target === "string" ? l.target : (l.target as { id: string }).id);
+    if (s && t) out[s].push(t);
+  }
+  return out;
+}
 
 function Index() {
   const [input, setInput] = useState("d3/d3");
