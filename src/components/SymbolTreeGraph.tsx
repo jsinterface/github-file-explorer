@@ -251,21 +251,26 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       return `M${s.x},${s.y} C${c1x},${c1y} ${c2x},${c2y} ${t.x},${t.y}`;
     }
 
-    // Build leaf -> ancestor folder ids and link key set per leaf.
+    // Build leaf -> ancestor folder ids, file ids, and link key set per leaf.
     const linkKey = (s: string, t: string) => `${s}__${t}`;
-    const leafAncestors = new Map<string, { folders: Set<string>; links: Set<string> }>();
+    const leafAncestors = new Map<
+      string,
+      { folders: Set<string>; files: Set<string>; links: Set<string> }
+    >();
     hierarchies.forEach((h) => {
       h.descendants().forEach((n) => {
         if (n.data.kind === "folder") return;
         const folders = new Set<string>();
+        const files = new Set<string>();
         const links = new Set<string>();
         let cur: d3.HierarchyNode<RawNode> | null = n;
         while (cur && cur.parent) {
           links.add(linkKey(cur.parent.data.id, cur.data.id));
           if (cur.parent.data.kind === "folder") folders.add(cur.parent.data.id);
+          if (cur.parent.data.kind === "file") files.add(cur.parent.data.id);
           cur = cur.parent;
         }
-        leafAncestors.set(n.data.id, { folders, links });
+        leafAncestors.set(n.data.id, { folders, files, links });
       });
     });
 
