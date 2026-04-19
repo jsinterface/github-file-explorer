@@ -311,6 +311,25 @@ export async function buildSymbolGraph(
       functionCount++;
       const sourceId = `${file}#${exp.exportName}`;
 
+      // Collect identifiers declared inside this function's own scope
+      // (params, local vars, nested functions/classes) so we can exclude them.
+      const localBindings = new Set<string>();
+      // Include the function's own name
+      localBindings.add(localName);
+      exp.bodyPath.traverse({
+        Scope(p) {
+          for (const name of Object.keys(p.scope.bindings)) {
+            localBindings.add(name);
+          }
+        },
+      });
+      // Also include bindings on the function's own scope (params, etc.)
+      if (exp.bodyPath.scope) {
+        for (const name of Object.keys(exp.bodyPath.scope.bindings)) {
+          localBindings.add(name);
+        }
+      }
+
       // Identifiers inside this function body
       const seen = new Set<string>();
       exp.bodyPath.traverse({
@@ -329,14 +348,16 @@ export async function buildSymbolGraph(
             !parent.computed
           )
             return;
-          // Skip the function's own name
-          if (p.node.name === localName) return;
+          // Skip identifiers that are locally declared within this function
+          if (localBindings.has(p.node.name)) return;
           seen.add(p.node.name);
         },
         JSXIdentifier(p) {
           // JSX tag/attr references — useful for component graphs
           const name = p.node.name;
-          if (/^[A-Z]/.test(name)) seen.add(name);
+          if (!/^[A-Z]/.test(name)) return;
+          if (localBindings.has(name)) return;
+          seen.add(name);
         },
       });
 
