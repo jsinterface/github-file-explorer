@@ -666,7 +666,11 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
       .attr("font-size", (d) => nodeFontSizeFor(d.radius))
-      .attr("fill", "var(--color-foreground)")
+      .attr("fill", "white")
+      .attr("stroke", "black")
+      .attr("stroke-width", 2)
+      .attr("stroke-linejoin", "round")
+      .attr("paint-order", "stroke")
       .text((d) => d.node.data.name);
 
     return () => {
