@@ -256,6 +256,40 @@ function Index() {
 
       {/* Floating pill-shaped form at the bottom */}
       <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-center gap-2 px-4">
+        {/* Status messages */}
+        {loading && progress && (
+          <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+            {progress}
+          </div>
+        )}
+
+        {error && (
+          <div className="pointer-events-auto rounded-full border border-destructive/30 bg-destructive/10 px-4 py-1.5 text-xs text-destructive shadow-md backdrop-blur-md">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+            <span className="font-mono">{result.repo}</span> · branch{" "}
+            <span className="font-mono">{result.branch}</span>
+            {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+              <> · {result.items.length} entries</>
+            )}
+            {view === "imports" && importGraph && (
+              <> · {importGraph.fileCount} source files</>
+            )}
+            {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+              <>
+                {" "}
+                · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                {symbolGraph.links.length} refs
+              </>
+            )}
+            {result.truncated && " · truncated"}
+          </div>
+        )}
+
         <form
           onSubmit={handleSubmit}
           className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 rounded-full border border-border bg-background/80 px-2 py-2 shadow-lg backdrop-blur-md"
@@ -295,40 +329,6 @@ function Index() {
           {/* Hidden submit so Enter key triggers form submission */}
           <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
         </form>
-
-        {/* Status messages */}
-        {loading && progress && (
-          <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
-            {progress}
-          </div>
-        )}
-
-        {error && (
-          <div className="pointer-events-auto rounded-full border border-destructive/30 bg-destructive/10 px-4 py-1.5 text-xs text-destructive shadow-md backdrop-blur-md">
-            {error}
-          </div>
-        )}
-
-        {result && (
-          <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
-            <span className="font-mono">{result.repo}</span> · branch{" "}
-            <span className="font-mono">{result.branch}</span>
-            {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
-              <> · {result.items.length} entries</>
-            )}
-            {view === "imports" && importGraph && (
-              <> · {importGraph.fileCount} source files</>
-            )}
-            {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
-              <>
-                {" "}
-                · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
-                {symbolGraph.links.length} refs
-              </>
-            )}
-            {result.truncated && " · truncated"}
-          </div>
-        )}
       </div>
     </div>
   );
