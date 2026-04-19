@@ -134,7 +134,7 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
   }, [data]);
 
   return (
-    <div className="rounded-md border border-border bg-muted">
+    <div className="rounded-md border border-border">
       <div className="max-h-[70vh] overflow-hidden">
         <svg ref={ref} className="w-full" style={{ height: "70vh" }} />
       </div>
