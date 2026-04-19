@@ -589,7 +589,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
-        .attr("stroke", "var(--color-chart-3)")
+        .attr("stroke", "#ffff00")
         .attr("stroke-opacity", 0.4)
         .attr("marker-end", "url(#arrow-ref-full)");
       node.style("opacity", FULL);
