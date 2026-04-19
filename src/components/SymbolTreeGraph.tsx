@@ -300,10 +300,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       return `M${p.s.x},${p.s.y} C${cx},${cy} ${cx},${cy} ${p.t.x},${p.t.y}`;
     }
 
-    svg
-      .append("defs")
+    const defs = svg.append("defs");
+    
+    // Arrow marker for full opacity (highlighted)
+    defs
       .append("marker")
-      .attr("id", "arrow-ref-stg")
+      .attr("id", "arrow-ref-full")
       .attr("viewBox", "0 -5 10 10")
       .attr("refX", 8)
       .attr("refY", 0)
@@ -313,6 +315,21 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "var(--color-chart-3)");
+    
+    // Arrow marker for dimmed opacity
+    defs
+      .append("marker")
+      .attr("id", "arrow-ref-dim")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-chart-3)")
+      .attr("fill-opacity", DIM);
 
     const refSel = container
       .append("g")
@@ -324,7 +341,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .join("path")
       .attr("d", refPath)
       .attr("stroke-opacity", 0.4)
-      .attr("marker-end", "url(#arrow-ref-stg)");
+      .attr("marker-end", "url(#arrow-ref-full)");
 
     // Build per-export ref maps: outgoing (this export references X) and incoming (X references this).
     const outgoingByExport = new Map<string, Set<string>>();
