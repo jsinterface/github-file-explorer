@@ -254,22 +254,22 @@ function Index() {
         </div>
       </div>
 
-      {/* Form at the bottom */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background p-4">
+      {/* Floating pill-shaped form at the bottom */}
+      <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-20 flex flex-col items-center gap-2 px-4">
         <form
           onSubmit={handleSubmit}
-          className="mx-auto flex max-w-4xl items-center gap-3"
+          className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 rounded-full border border-border bg-background/80 px-2 py-2 shadow-lg backdrop-blur-md"
         >
           <Input
             id="repo"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="owner/name or https://github.com/owner/name"
-            className="flex-1"
+            className="flex-1 rounded-full border-0 bg-transparent shadow-none focus-visible:ring-0"
             disabled={loading}
           />
           <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px] rounded-full border-0 bg-muted/60 shadow-none focus:ring-0">
               <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent>
@@ -288,7 +288,7 @@ function Index() {
               value={inputJson}
               onChange={(e) => setInputJson(e.target.value)}
               spellCheck={false}
-              className="flex-1 font-mono text-xs"
+              className="flex-1 rounded-full border-0 bg-muted/60 font-mono text-xs shadow-none focus-visible:ring-0"
               placeholder='Input JSON: {"name": "world"}'
             />
           )}
@@ -298,19 +298,19 @@ function Index() {
 
         {/* Status messages */}
         {loading && progress && (
-          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-border bg-muted p-2 text-xs text-muted-foreground">
+          <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
             {progress}
           </div>
         )}
 
         {error && (
-          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+          <div className="pointer-events-auto rounded-full border border-destructive/30 bg-destructive/10 px-4 py-1.5 text-xs text-destructive shadow-md backdrop-blur-md">
             {error}
           </div>
         )}
 
         {result && (
-          <div className="mx-auto mt-2 max-w-4xl rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+          <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
             <span className="font-mono">{result.repo}</span> · branch{" "}
             <span className="font-mono">{result.branch}</span>
             {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
