@@ -533,7 +533,7 @@ export function SymbolTreeGraph({
     const linkSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-muted-foreground)")
+      .attr("stroke", "#555555")
       .attr("stroke-width", 1.8)
       .selectAll<SVGPathElement, { s: Placed; t: Placed }>("path")
       .data(allLinks)
@@ -634,7 +634,7 @@ export function SymbolTreeGraph({
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-muted-foreground)")
+      .attr("stroke", "#555555")
       .attr("stroke-width", 1.4)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
@@ -816,7 +816,7 @@ export function SymbolTreeGraph({
           // Outgoing from a target = referenced edge; incoming to a target = referencing edge.
           if (targetIds.has(sId)) return "#5c6bc0";
           if (targetIds.has(tId)) return "#6d4c41";
-          return "var(--color-muted-foreground)";
+          return "#555555";
         })
         .attr("stroke-opacity", (p) => {
           const sId = p.s.node.data.id;
@@ -840,7 +840,7 @@ export function SymbolTreeGraph({
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
-        .attr("stroke", "var(--color-muted-foreground)")
+        .attr("stroke", "#555555")
         .attr("stroke-opacity", 1)
         .attr("marker-end", "url(#arrow-ref-default)");
       node.style("opacity", FULL);
