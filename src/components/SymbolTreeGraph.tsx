@@ -978,7 +978,7 @@ export function SymbolTreeGraph({
       );
       if (targetText) {
         targetText.style.filter =
-          "drop-shadow(0 0 4px #22ff88) drop-shadow(0 0 10px #22ff88)";
+          "drop-shadow(0 0 4px #ffff00) drop-shadow(0 0 10px #ffff00)";
       }
     }
 
@@ -1033,10 +1033,10 @@ export function SymbolTreeGraph({
       const traveler = document.createElementNS(ns, "circle");
       traveler.setAttribute("class", "edge-traveler");
       traveler.setAttribute("r", "4");
-      traveler.setAttribute("fill", "#22ff88");
-      traveler.setAttribute("stroke", "#22ff88");
+      traveler.setAttribute("fill", "#ffff00");
+      traveler.setAttribute("stroke", "#ffff00");
       traveler.setAttribute("stroke-width", "0.5");
-      traveler.style.filter = "drop-shadow(0 0 6px #22ff88) drop-shadow(0 0 12px #22ff88)";
+      traveler.style.filter = "drop-shadow(0 0 6px #ffff00) drop-shadow(0 0 12px #ffff00)";
       traveler.style.pointerEvents = "none";
       path.parentNode?.appendChild(traveler);
 
