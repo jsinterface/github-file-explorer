@@ -290,67 +290,70 @@ function Index() {
           </div>
         )}
 
-        {/* Merged status bar with legend */}
-        <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
-          {view === "symbolTree" && symbolGraph && (
-            <>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
-                folder
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
-                file
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#536dfe" }} />
-                function
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
-                value
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-0.5" style={{ background: "var(--color-muted-foreground)" }} />
-                reference
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-0.5" style={{ background: "var(--ref-out-color)" }} />
-                referenced
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-0.5" style={{ background: "#536dfe" }} />
-                referencing
-              </span>
-              <span className="mx-1 h-3 w-px bg-border" />
-            </>
-          )}
-          {loading && progress ? (
-            <span>{progress}</span>
-          ) : error ? (
-            <span className="text-destructive">{error}</span>
-          ) : result ? (
-            <>
-              <span>
-                <span className="font-mono">{result.repo}</span> · branch{" "}
-                <span className="font-mono">{result.branch}</span>
-              </span>
-              {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
-                <span>· {result.items.length} entries</span>
-              )}
-              {view === "imports" && importGraph && (
-                <span>· {importGraph.fileCount} source files</span>
-              )}
-              {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+        {/* Legend (above status bar) */}
+        {view === "symbolTree" && symbolGraph && (
+          <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
+              folder
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+              file
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#536dfe" }} />
+              function
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+              value
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-0.5" style={{ background: "var(--color-muted-foreground)" }} />
+              reference
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-0.5" style={{ background: "var(--ref-out-color)" }} />
+              referenced
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-0.5" style={{ background: "#536dfe" }} />
+              referencing
+            </span>
+          </div>
+        )}
+
+        {/* Status message (on new line) */}
+        {(loading && progress) || error || result ? (
+          <div className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+            {loading && progress ? (
+              <span>{progress}</span>
+            ) : error ? (
+              <span className="text-destructive">{error}</span>
+            ) : result ? (
+              <>
                 <span>
-                  · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
-                  {symbolGraph.links.length} refs
+                  <span className="font-mono">{result.repo}</span> · branch{" "}
+                  <span className="font-mono">{result.branch}</span>
                 </span>
-              )}
-              {result.truncated && <span>· truncated</span>}
-            </>
-          ) : null}
-        </div>
+                {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+                  <span>· {result.items.length} entries</span>
+                )}
+                {view === "imports" && importGraph && (
+                  <span>· {importGraph.fileCount} source files</span>
+                )}
+                {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+                  <span>
+                    · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                    {symbolGraph.links.length} refs
+                  </span>
+                )}
+                {result.truncated && <span>· truncated</span>}
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
         <form
           onSubmit={handleSubmit}
