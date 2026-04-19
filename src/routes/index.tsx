@@ -166,7 +166,7 @@ function Index() {
       if (!repoRes.ok) throw new Error(`Repository not found (${repoRes.status})`);
       const repoData = await repoRes.json();
       const branch: string = repoData.default_branch;
-
+      setRepoMeta({ owner: parsed.owner, repo: parsed.repo, branch });
       if (view === "imports" || view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") {
         if (view === "imports") {
           const graph = await buildImportGraph(
