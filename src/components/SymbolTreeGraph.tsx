@@ -732,7 +732,7 @@ export function SymbolTreeGraph({
 
     container
       .append("g")
-      .attr("font-family", '"Averia Serif Libre", ui-monospace, monospace')
+      .attr("font-family", '"Averia Sans Libre", ui-monospace, monospace')
       .attr("fill", "white")
       .attr("stroke", "black")
       .attr("stroke-width", 4)
@@ -899,7 +899,7 @@ export function SymbolTreeGraph({
         return flip ? -r : r;
       })
       .attr("dy", "0.32em")
-      .attr("font-family", '"Averia Serif Libre", ui-monospace, monospace')
+      .attr("font-family", '"Averia Sans Libre", ui-monospace, monospace')
       .attr("font-size", (d) => nodeFontSizeFor(d.radius))
       .attr("fill", "white")
       .attr("stroke", "black")
