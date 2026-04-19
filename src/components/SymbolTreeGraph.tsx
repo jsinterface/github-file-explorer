@@ -403,6 +403,23 @@ export function SymbolTreeGraph({
     const zoomBehavior = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.3, 8])
+      .filter((event: Event) => {
+        // Always allow wheel zoom; restrict drag start to inside the innermost ring.
+        if (event.type === "wheel") return true;
+        const svgEl = ref.current;
+        if (!svgEl) return true;
+        const src = event as MouseEvent | TouchEvent;
+        const touch = "touches" in src ? src.touches[0] : (src as MouseEvent);
+        if (!touch) return false;
+        const pt = svgEl.createSVGPoint();
+        pt.x = (touch as { clientX: number }).clientX;
+        pt.y = (touch as { clientY: number }).clientY;
+        const ctm = (container.node() as SVGGElement).getScreenCTM();
+        if (!ctm) return true;
+        const local = pt.matrixTransform(ctm.inverse());
+        const dist = Math.hypot(local.x - cx, local.y - cy);
+        return dist <= innerR;
+      })
       .on("zoom", (event) => container.attr("transform", event.transform.toString()));
     svg.call(zoomBehavior);
 
