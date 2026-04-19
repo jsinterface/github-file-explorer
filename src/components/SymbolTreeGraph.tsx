@@ -510,7 +510,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     container
       .append("g")
       .attr("font-family", "\"Averia Serif Libre\", ui-monospace, monospace")
-      .attr("fill", "var(--color-foreground)")
+      .attr("fill", "white")
+      .attr("stroke", "black")
+      .attr("stroke-width", 4)
+      .attr("stroke-linejoin", "round")
+      .attr("paint-order", "stroke")
+      .attr("font-weight", 700)
       .selectAll<SVGTextElement, FolderArc>("text")
       .data(folderArcs)
       .join("text")
