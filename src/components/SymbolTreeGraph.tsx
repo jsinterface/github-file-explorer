@@ -1087,6 +1087,16 @@ export function SymbolTreeGraph({
               </div>
               <button
                 type="button"
+                onClick={handleSkipFrame}
+                disabled={stack.length === 0}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="skip current frame"
+                title="Terminate current frame and return to the previous reference"
+              >
+                <Footprints className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
                 onClick={() => setNoRecurse((v) => !v)}
                 className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
                 aria-label={noRecurse ? "enable recursion" : "disable recursion"}
