@@ -301,9 +301,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       })
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", (d) =>
-        d.node.data.kind === "folder" ? 9 : d.node.data.kind === "file" ? 8 : 7,
-      )
+      .attr("font-size", (d) => (d.node.data.kind === "folder" ? 9 : d.node.data.kind === "file" ? 8 : 7))
       .attr("fill", "var(--color-foreground)")
       .text((d) => d.node.data.name);
 
