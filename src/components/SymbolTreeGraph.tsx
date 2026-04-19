@@ -412,7 +412,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#536dfe");
+      .attr("fill", "var(--ref-in-color)");
 
     const refSel = container
       .append("g")
@@ -583,7 +583,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
           const tId = p.t.node.data.id;
           // Outgoing from a target = referenced edge; incoming to a target = referencing edge.
           if (targetIds.has(sId)) return "#ffff00";
-          if (targetIds.has(tId)) return "#536dfe";
+          if (targetIds.has(tId)) return "var(--ref-in-color)";
           return "#ffff00";
         })
         .attr("stroke-opacity", (p) => {
