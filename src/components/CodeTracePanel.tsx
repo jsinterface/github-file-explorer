@@ -59,7 +59,7 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-0 flex flex-col rounded-md bg-background/30 opacity-15 backdrop-blur-sm hover:opacity-100"
+      className="pointer-events-auto absolute inset-0 z-0 flex flex-col rounded-md bg-background/30 opacity-30 backdrop-blur-sm hover:opacity-100"
     >
       <style>{`
         .ref-token { background: color-mix(in oklab, var(--color-accent) 30%, transparent); border-radius: 2px; padding: 0 1px; transition: all 0.25s; }
