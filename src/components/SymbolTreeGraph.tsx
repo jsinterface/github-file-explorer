@@ -99,26 +99,33 @@ export function SymbolTreeGraph({
   const ref = useRef<SVGSVGElement | null>(null);
   const built = useMemo(() => buildHierarchy(data), [data]);
 
-  type RunState = {
+  // A single frame in the call stack: one function that is currently executing.
+  // The animation always reflects the TOP of the stack.
+  type Frame = {
     filePath: string;
     trace: FunctionTrace;
-    step: number;
-    result: { ok: true; value: unknown } | { ok: false; error: string } | null;
     sourceExportId: string;
-    edgeOrder: string[]; // ordered target export ids matching call sites
-    completed: boolean;
+    edgeOrder: string[]; // ordered target export ids aligned with trace.callSites
+    step: number; // -1 = not yet at a call, 0..edgeOrder.length-1 = at that call, edgeOrder.length = past last
+    result: { ok: true; value: unknown } | { ok: false; error: string } | null;
+    direction: "forward" | "returning"; // traveler direction for current step
   };
-  const [run, setRun] = useState<RunState | null>(null);
-  const runRef = useRef<RunState | null>(null);
-  runRef.current = run;
-  const stepTimerRef = useRef<number | null>(null);
+  const [stack, setStack] = useState<Frame[]>([]);
+  const cancelRef = useRef<{ cancelled: boolean }>({ cancelled: false });
 
-  const handleExportClick = useCallback(
-    async (exportId: string, exportKind: "function" | "value") => {
-      if (exportKind !== "function" || !repo) return;
-      // exportId = `export:<file>#<name>`
+  const STEP_MS = 1500;
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+
+  // Build a Frame for a given export id. Fetches source, builds trace, and aligns edgeOrder.
+  // Returns null if the export cannot be located or has no animatable refs.
+  const buildFrame = useCallback(
+    async (exportId: string, executeFn: boolean): Promise<Frame | null> => {
+      if (!repo) return null;
       const m = exportId.match(/^export:(.+)#([^#]+)$/);
-      if (!m) return;
+      if (!m) return null;
       const filePath = m[1];
       const exportName = m[2];
 
@@ -130,35 +137,47 @@ export function SymbolTreeGraph({
         if (tid) labelToTargetId.set(label.split(":").pop() ?? label, tid);
       });
 
+      let source = "";
       try {
-        const source = await fetchRawFile(repo.owner, repo.repo, repo.branch, filePath);
-        const trace = analyzeFunctionInSource(source, filePath, exportName, refLabels);
-        if (!trace) {
-          setRun({
-            filePath,
-            trace: { source, exportName, bodyStart: 0, bodyEnd: source.length, callSites: [] },
-            step: -1,
-            result: { ok: false, error: "Could not locate export in source." },
-            sourceExportId: exportId,
-            edgeOrder: [],
-            completed: true,
-          });
-          return;
-        }
-        // Build edgeOrder aligned with call sites, then filter out value-target refs from animation.
-        const filteredCallSites: typeof trace.callSites = [];
-        const edgeOrder: string[] = [];
-        for (const cs of trace.callSites) {
-          const tid = labelToTargetId.get(cs.name);
-          if (!tid) continue;
-          if (built.kindById.get(tid) !== "function") continue;
-          filteredCallSites.push(cs);
-          edgeOrder.push(tid);
-        }
-        trace.callSites = filteredCallSites;
+        source = await fetchRawFile(repo.owner, repo.repo, repo.branch, filePath);
+      } catch (e) {
+        return {
+          filePath,
+          trace: { source: "", exportName, bodyStart: 0, bodyEnd: 0, callSites: [] },
+          sourceExportId: exportId,
+          edgeOrder: [],
+          step: -1,
+          result: { ok: false, error: e instanceof Error ? e.message : String(e) },
+          direction: "forward",
+        };
+      }
 
-        // Try to execute against the JSON input.
-        let result: RunState["result"] = null;
+      const trace = analyzeFunctionInSource(source, filePath, exportName, refLabels);
+      if (!trace) {
+        return {
+          filePath,
+          trace: { source, exportName, bodyStart: 0, bodyEnd: source.length, callSites: [] },
+          sourceExportId: exportId,
+          edgeOrder: [],
+          step: -1,
+          result: { ok: false, error: "Could not locate export in source." },
+          direction: "forward",
+        };
+      }
+
+      const filteredCallSites: typeof trace.callSites = [];
+      const edgeOrder: string[] = [];
+      for (const cs of trace.callSites) {
+        const tid = labelToTargetId.get(cs.name);
+        if (!tid) continue;
+        if (built.kindById.get(tid) !== "function") continue;
+        filteredCallSites.push(cs);
+        edgeOrder.push(tid);
+      }
+      trace.callSites = filteredCallSites;
+
+      let result: Frame["result"] = null;
+      if (executeFn) {
         try {
           const data = inputJson?.trim() ? JSON.parse(inputJson) : undefined;
           const mod = await loadModuleFromSource(source, filePath);
@@ -170,62 +189,96 @@ export function SymbolTreeGraph({
             result = { ok: true, value };
           }
         } catch (e) {
-          result = {
-            ok: false,
-            error: e instanceof Error ? e.message : String(e),
-          };
+          result = { ok: false, error: e instanceof Error ? e.message : String(e) };
         }
-
-        // Animate the step pointer through call sites.
-        if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
-        const total = trace.callSites.length;
-        setRun({
-          filePath,
-          trace,
-          step: total > 0 ? 0 : -1,
-          result,
-          sourceExportId: exportId,
-          edgeOrder,
-          completed: total === 0,
-        });
-        if (total > 1) {
-          let i = 0;
-          stepTimerRef.current = window.setInterval(() => {
-            i++;
-            if (i >= total) {
-              if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
-              stepTimerRef.current = null;
-              setRun((prev) => (prev ? { ...prev, completed: true } : prev));
-              return;
-            }
-            setRun((prev) => (prev ? { ...prev, step: i } : prev));
-          }, 1500);
-        } else if (total === 1) {
-          // Single step: mark completed after one traversal duration
-          window.setTimeout(() => {
-            setRun((prev) => (prev ? { ...prev, completed: true } : prev));
-          }, 1500);
-        }
-      } catch (e) {
-        setRun({
-          filePath,
-          trace: { source: "", exportName, bodyStart: 0, bodyEnd: 0, callSites: [] },
-          step: -1,
-          result: { ok: false, error: e instanceof Error ? e.message : String(e) },
-          sourceExportId: exportId,
-          edgeOrder: [],
-          completed: true,
-        });
       }
+
+      return {
+        filePath,
+        trace,
+        sourceExportId: exportId,
+        edgeOrder,
+        step: edgeOrder.length > 0 ? 0 : -1,
+        result,
+        direction: "forward",
+      };
     },
     [repo, inputJson, built],
   );
 
+  // Recursively animate: forward traveler -> hover/click target -> recurse into target -> return traveler -> next step.
+  // `pathIds` = export ids currently on the stack to prevent cycles.
+  const animateFrame = useCallback(
+    async (exportId: string, pathIds: Set<string>, executeFn: boolean): Promise<void> => {
+      const token = cancelRef.current;
+      if (token.cancelled) return;
+      const frame = await buildFrame(exportId, executeFn);
+      if (token.cancelled || !frame) return;
+
+      // Push frame onto stack.
+      setStack((s) => [...s, frame]);
+
+      const total = frame.edgeOrder.length;
+      const nextPath = new Set(pathIds);
+      nextPath.add(exportId);
+
+      for (let i = 0; i < total; i++) {
+        if (token.cancelled) return;
+        // Update top frame: forward direction at step i.
+        setStack((s) => {
+          if (s.length === 0) return s;
+          const top = { ...s[s.length - 1], step: i, direction: "forward" as const };
+          return [...s.slice(0, -1), top];
+        });
+        // Wait for the forward traveler to arrive.
+        await sleep(STEP_MS);
+        if (token.cancelled) return;
+
+        const targetId = frame.edgeOrder[i];
+        // Recurse if target is a known function with its own refs and not already on the stack.
+        const targetIsKnown =
+          built.refsByExport.has(targetId) && built.kindById.get(targetId) === "function";
+        if (targetIsKnown && !nextPath.has(targetId)) {
+          await animateFrame(targetId, nextPath, false);
+          if (token.cancelled) return;
+        }
+
+        // Animate return: target -> source.
+        setStack((s) => {
+          if (s.length === 0) return s;
+          const top = { ...s[s.length - 1], step: i, direction: "returning" as const };
+          return [...s.slice(0, -1), top];
+        });
+        await sleep(STEP_MS);
+        if (token.cancelled) return;
+      }
+
+      // Pop frame.
+      setStack((s) => s.slice(0, -1));
+    },
+    [buildFrame, built],
+  );
+
+  const handleExportClick = useCallback(
+    async (exportId: string, exportKind: "function" | "value") => {
+      if (exportKind !== "function" || !repo) return;
+      // Cancel any previous animation.
+      cancelRef.current.cancelled = true;
+      cancelRef.current = { cancelled: false };
+      setStack([]);
+      await animateFrame(exportId, new Set(), true);
+    },
+    [repo, animateFrame],
+  );
+
   useEffect(() => {
     return () => {
-      if (stepTimerRef.current) window.clearInterval(stepTimerRef.current);
+      cancelRef.current.cancelled = true;
     };
   }, []);
+
+  // Convenience: top frame drives the visualization & code panel.
+  const run = stack.length > 0 ? stack[stack.length - 1] : null;
 
   useEffect(() => {
     if (!ref.current) return;
