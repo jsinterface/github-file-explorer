@@ -134,6 +134,8 @@
   --ref-out-color: #ffff00;
 }
 
+@import url("https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap");
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -142,5 +144,6 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: "Averia Serif Libre", ui-serif, Georgia, serif;
   }
 }

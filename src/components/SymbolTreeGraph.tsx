@@ -903,7 +903,7 @@ export function SymbolTreeGraph({
       .attr("font-size", (d) => nodeFontSizeFor(d.radius))
       .attr("fill", "white")
       .attr("stroke", "black")
-      .attr("stroke-width", 4)
+      .attr("stroke-width", 7)
       .attr("stroke-linejoin", "round")
       .attr("paint-order", "stroke")
       .attr("font-weight", 700)
