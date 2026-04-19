@@ -322,7 +322,7 @@ function Index() {
 
         <form
           onSubmit={handleSubmit}
-          className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 self-center rounded-full border border-border px-2 py-2 shadow-lg backdrop-blur-md"
+          className="pointer-events-auto flex w-full max-w-4xl items-center gap-2 self-center rounded-full border border-border px-2 py-2 font-['Averia_Sans_Libre'] shadow-lg backdrop-blur-md"
           style={{ background: "color-mix(in oklab, var(--surface-elevated) 85%, transparent)" }}
         >
           <span className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a]">
