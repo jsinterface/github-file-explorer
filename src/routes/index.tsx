@@ -88,17 +88,21 @@ type ViewMode =
   | "symbolsJson"
   | "symbolTree";
 
+type SymbolLeaf = {
+  kind: "function" | "value";
+  refs: string[];
+};
 type SymbolTreeNode =
   | { [key: string]: SymbolTreeNode }
-  | Record<string, string[]>;
+  | Record<string, SymbolLeaf>;
 
 function symbolGraphToTree(g: SymbolGraph): Record<string, SymbolTreeNode> {
   const idToLabel = new Map(g.nodes.map((n) => [n.id, n.label]));
   // Group nodes by file, collect referenced labels per export name
-  const perFile = new Map<string, Record<string, string[]>>();
+  const perFile = new Map<string, Record<string, SymbolLeaf>>();
   for (const n of g.nodes) {
     if (!perFile.has(n.file)) perFile.set(n.file, {});
-    perFile.get(n.file)![n.name] = [];
+    perFile.get(n.file)![n.name] = { kind: n.kind, refs: [] };
   }
   for (const l of g.links) {
     const sId = typeof l.source === "string" ? l.source : (l.source as { id: string }).id;
@@ -106,7 +110,7 @@ function symbolGraphToTree(g: SymbolGraph): Record<string, SymbolTreeNode> {
     const sNode = g.nodes.find((n) => n.id === sId);
     const tLabel = idToLabel.get(tId);
     if (!sNode || !tLabel) continue;
-    perFile.get(sNode.file)?.[sNode.name]?.push(tLabel);
+    perFile.get(sNode.file)?.[sNode.name]?.refs.push(tLabel);
   }
 
   const root: Record<string, SymbolTreeNode> = {};
