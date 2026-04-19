@@ -290,43 +290,44 @@ function Index() {
           </div>
         )}
 
-        {/* Legend (above status bar) */}
-        {view === "symbolTree" && symbolGraph && (
+        {/* Legend and status message in one pill bar */}
+        {(view === "symbolTree" && symbolGraph) || (loading && progress) || error || result ? (
           <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
-              folder
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
-              file
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#536dfe" }} />
-              function
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
-              value
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-3 w-0.5" style={{ background: "var(--color-muted-foreground)" }} />
-              reference
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-3 w-0.5" style={{ background: "var(--ref-out-color)" }} />
-              referenced
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-3 w-0.5" style={{ background: "#536dfe" }} />
-              referencing
-            </span>
-          </div>
-        )}
-
-        {/* Status message (on new line) */}
-        {(loading && progress) || error || result ? (
-          <div className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur-md">
+            {view === "symbolTree" && symbolGraph && (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
+                  folder
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+                  file
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "#536dfe" }} />
+                  function
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
+                  value
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-3 w-0.5" style={{ background: "var(--color-muted-foreground)" }} />
+                  reference
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-3 w-0.5" style={{ background: "var(--ref-out-color)" }} />
+                  referenced
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-3 w-0.5" style={{ background: "#536dfe" }} />
+                  referencing
+                </span>
+              </>
+            )}
+            {(view === "symbolTree" && symbolGraph) && (loading && progress || error || result) && (
+              <span className="mx-1 h-3 w-px bg-border" />
+            )}
             {loading && progress ? (
               <span>{progress}</span>
             ) : error ? (
