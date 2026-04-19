@@ -225,24 +225,74 @@ function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-12">
-      <div className="mx-auto max-w-4xl">
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              GitHub Repo Explorer
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Enter a repository (e.g. <code className="font-mono">facebook/react</code>) to
-              view its files and folders as JSON or as a D3 graph.
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Full-screen visualization area */}
+      <div className="h-screen w-full">
+        {loading && progress && (
+          <div className="absolute left-4 top-4 z-10 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
+            {progress}
           </div>
-          <ThemeToggle />
-        </header>
+        )}
 
+        {error && (
+          <div className="absolute left-4 top-4 z-10 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="absolute left-4 top-4 z-10 rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+            <span className="font-mono">{result.repo}</span> · branch{" "}
+            <span className="font-mono">{result.branch}</span>
+            {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
+              <> · {result.items.length} entries</>
+            )}
+            {view === "imports" && importGraph && (
+              <> · {importGraph.fileCount} source files</>
+            )}
+            {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
+              <>
+                {" "}
+                · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
+                {symbolGraph.links.length} refs
+              </>
+            )}
+            {result.truncated && " · truncated"}
+          </div>
+        )}
+
+        <div className="h-full w-full">
+          {view === "json" && result && (
+            <pre className="h-full w-full overflow-auto rounded-none border-0 bg-muted p-4 font-mono text-xs text-foreground">
+              {result.json}
+            </pre>
+          )}
+          {view === "graph" && result && (
+            <FileGraph items={result.items} rootLabel={result.repo} />
+          )}
+          {view === "imports" && importGraph && <ImportGraphView data={importGraph} />}
+          {view === "symbols" && symbolGraph && <SymbolGraphView data={symbolGraph} />}
+          {view === "symbolsLoom" && symbolGraph && <SymbolLoomView data={symbolGraph} />}
+          {view === "symbolsJson" && symbolGraph && (
+            <pre className="h-full w-full overflow-auto rounded-none border-0 bg-muted p-4 font-mono text-xs text-foreground">
+              {JSON.stringify(symbolGraphToTree(symbolGraph), null, 2)}
+            </pre>
+          )}
+          {view === "symbolTree" && symbolGraph && (
+            <SymbolTreeGraph
+              data={symbolGraphToTree(symbolGraph)}
+              repo={repoMeta}
+              inputJson={inputJson}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Form at the bottom */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background p-4">
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-end"
         >
           <div className="flex-1">
             <Label htmlFor="repo">Repository</Label>
@@ -280,10 +330,11 @@ function Index() {
                   ? "Analyze symbols"
                   : "Fetch tree"}
           </Button>
+          <ThemeToggle />
         </form>
 
         {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
-          <div className="mt-3">
+          <div className="mx-auto mt-3 max-w-4xl">
             <Label htmlFor="input-json" className="mb-1.5 block">
               Input JSON (passed as the first argument when you click a function)
             </Label>
@@ -293,67 +344,9 @@ function Index() {
               onChange={(e) => setInputJson(e.target.value)}
               spellCheck={false}
               className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              rows={4}
+              rows={2}
               placeholder='{"name": "world"}'
             />
-          </div>
-        )}
-
-        {loading && progress && (
-          <div className="mt-6 rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground">
-            {progress}
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        {result && (
-          <div className="mt-6">
-            <div className="mb-3 text-xs text-muted-foreground">
-              <span className="font-mono">{result.repo}</span> · branch{" "}
-              <span className="font-mono">{result.branch}</span>
-              {view !== "imports" && view !== "symbols" && view !== "symbolsLoom" && view !== "symbolsJson" && view !== "symbolTree" && (
-                <> · {result.items.length} entries</>
-              )}
-              {view === "imports" && importGraph && (
-                <> · {importGraph.fileCount} source files</>
-              )}
-              {(view === "symbols" || view === "symbolsLoom" || view === "symbolsJson" || view === "symbolTree") && symbolGraph && (
-                <>
-                  {" "}
-                  · {symbolGraph.fileCount} files · {symbolGraph.nodes.length} symbols ·{" "}
-                  {symbolGraph.links.length} refs
-                </>
-              )}
-              {result.truncated && " · truncated"}
-            </div>
-            {view === "json" && (
-              <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
-                {result.json}
-              </pre>
-            )}
-            {view === "graph" && (
-              <FileGraph items={result.items} rootLabel={result.repo} />
-            )}
-            {view === "imports" && importGraph && <ImportGraphView data={importGraph} />}
-            {view === "symbols" && symbolGraph && <SymbolGraphView data={symbolGraph} />}
-            {view === "symbolsLoom" && symbolGraph && <SymbolLoomView data={symbolGraph} />}
-            {view === "symbolsJson" && symbolGraph && (
-              <pre className="max-h-[70vh] overflow-auto rounded-md border border-border bg-muted p-4 font-mono text-xs text-foreground">
-                {JSON.stringify(symbolGraphToTree(symbolGraph), null, 2)}
-              </pre>
-            )}
-            {view === "symbolTree" && symbolGraph && (
-              <SymbolTreeGraph
-                data={symbolGraphToTree(symbolGraph)}
-                repo={repoMeta}
-                inputJson={inputJson}
-              />
-            )}
           </div>
         )}
       </div>
