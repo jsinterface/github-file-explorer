@@ -894,6 +894,8 @@ export function SymbolTreeGraph({
 
     // All labels point radially outward (away from the chart center).
     node
+      .filter((d) => d.kind !== "folder")
+
       .append("text")
       .attr("class", "node-label")
       .attr("transform", (d) => {
