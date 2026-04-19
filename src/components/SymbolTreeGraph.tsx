@@ -392,8 +392,6 @@ export function SymbolTreeGraph({
       h.each((n) => {
         const angle = a0 + (n.x ?? 0);
         let radius: number;
-        if (n.data.kind === "folder") return;
-
         if (n.data.kind === "export") {
           // All exports pinned to the innermost ring.
           radius = innerR;
