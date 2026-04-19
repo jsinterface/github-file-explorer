@@ -392,6 +392,8 @@ export function SymbolTreeGraph({
       h.each((n) => {
         const angle = a0 + (n.x ?? 0);
         let radius: number;
+        if (n.data.kind === "folder") return;
+
         if (n.data.kind === "export") {
           // All exports pinned to the innermost ring.
           radius = innerR;
@@ -894,8 +896,6 @@ export function SymbolTreeGraph({
 
     // All labels point radially outward (away from the chart center).
     node
-      .filter((d) => d.kind !== "folder")
-
       .append("text")
       .attr("class", "node-label")
       .attr("transform", (d) => {
