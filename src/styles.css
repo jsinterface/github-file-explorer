@@ -146,4 +146,11 @@
     color: var(--color-foreground);
     font-family: "Averia Sans Libre", ui-sans-serif, system-ui, sans-serif;
   }
+
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+  }
 }
