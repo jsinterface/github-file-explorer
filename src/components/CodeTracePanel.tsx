@@ -70,8 +70,8 @@ export function CodeTracePanel({ trace, filePath, step, result, onClose }: Props
 
   return (
     <div
-      className={`pointer-events-auto fixed bottom-4 right-4 z-50 flex max-h-[80vh] w-[min(560px,90vw)] flex-col rounded-md border border-border/40 bg-background/30 shadow-xl backdrop-blur-md transition-opacity duration-700 ${
-        faded ? "opacity-20 hover:opacity-100" : "opacity-100"
+      className={`pointer-events-auto absolute inset-0 z-0 flex flex-col rounded-md bg-background/30 backdrop-blur-sm transition-opacity duration-700 ${
+        faded ? "opacity-10 hover:opacity-100" : "opacity-100"
       }`}
     >
       <style>{`
