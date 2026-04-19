@@ -1095,7 +1095,23 @@ export function SymbolTreeGraph({
           />
         )}
         {stack.length > 0 && (
-          <div className="pointer-events-none fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+          <div className="pointer-events-auto fixed bottom-24 left-4 z-30 flex max-w-md flex-col-reverse gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+            {/* Speed dial — first child = bottom row in flex-col-reverse */}
+            <div className="flex items-center gap-2 font-mono text-[10px]">
+              <span className="text-muted-foreground">speed</span>
+              <input
+                type="range"
+                min={0.25}
+                max={4}
+                step={0.25}
+                value={speed}
+                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                className="h-1 flex-1 cursor-pointer accent-[#ffff00]"
+              />
+              <span className="w-8 shrink-0 text-right font-semibold text-foreground">
+                {speed.toFixed(2)}x
+              </span>
+            </div>
             {stack.map((f, i) => {
               const total = Math.max(1, f.edgeOrder.length);
               const done = f.direction === "returning" ? f.step + 1 : f.step;
