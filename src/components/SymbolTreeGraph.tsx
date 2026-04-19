@@ -226,16 +226,16 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       }
     }
 
-    // Bezier path: arcs upward (above export row) so they don't tangle with the tree.
-    // Longer horizontal pull on control points + larger lift = taller, sweeping arches.
+    // Bezier path: each end shoots straight upward, then sweeps over to the other side.
+    // Control points sit directly above each endpoint (no horizontal pull) so the
+    // tangent at the start/end is vertical — giving a natural fountain-like arch.
     function bezierPath(p: RefPair): string {
       const dx = p.tx - p.sx;
       const dist = Math.abs(dx);
       const lift = Math.min(marginTop * 0.95, 80 + dist * 0.9);
-      const pull = Math.max(60, dist * 0.45);
-      const c1x = p.sx + Math.sign(dx || 1) * pull;
+      const c1x = p.sx;
       const c1y = p.sy - lift;
-      const c2x = p.tx - Math.sign(dx || 1) * pull;
+      const c2x = p.tx;
       const c2y = p.ty - lift;
       return `M${p.sx},${p.sy} C${c1x},${c1y} ${c2x},${c2y} ${p.tx},${p.ty}`;
     }
