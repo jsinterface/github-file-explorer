@@ -370,8 +370,8 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("stroke", "none")
       .attr("d", labelPathD);
 
-    // Scale labels by ring distance: center = 0em, outer ring = 2em.
-    const fontSizeFor = (r: number) => `${(r / outerR) * 2}em`;
+    // Scale labels by ring distance: center = 0em, outer ring = 1em.
+    const fontSizeFor = (r: number) => `${r / outerR}em`;
 
     container
       .append("g")
@@ -406,8 +406,8 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("title")
       .text((d) => `${d.node.data.kind}: ${d.node.data.name}`);
 
-    // Scale labels by ring distance: center = 0em, outer ring = 2em.
-    const nodeFontSizeFor = (r: number) => `${(r / outerR) * 2}em`;
+    // Scale labels by ring distance: center = 0em, outer ring = 1em.
+    const nodeFontSizeFor = (r: number) => `${r / outerR}em`;
 
     // All labels point radially outward (away from the chart center).
     node
