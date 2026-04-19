@@ -355,44 +355,52 @@ function Index() {
             <div className="flex items-center font-mono text-xs text-muted-foreground">
               <span className="select-none pl-1 pr-0.5 text-2xl leading-none">(</span>
               {inputArgs.map((arg, i) => {
-                const width = `${Math.max(2, arg.length || (i === 0 ? 12 : 2))}ch`;
+                const placeholder = '{"name":"world"}';
+                const display = arg.length > 0 ? arg : placeholder;
                 return (
                   <span key={i} className="flex items-center">
                     {i > 0 && <span className="select-none px-0.5">,</span>}
-                    <input
-                      value={arg}
-                      onChange={(e) => {
-                        const next = [...inputArgs];
-                        next[i] = e.target.value;
-                        setInputArgs(next);
-                      }}
-                      onKeyDown={(e) => {
-                        if (
-                          e.key === "Backspace" &&
-                          arg === "" &&
-                          inputArgs.length > 1
-                        ) {
-                          e.preventDefault();
-                          const next = inputArgs.filter((_, idx) => idx !== i);
+                    <span className="relative inline-block font-mono text-xs leading-none">
+                      {/* Invisible sizer mirrors the input text to size the wrapper. */}
+                      <span
+                        aria-hidden="true"
+                        className="invisible whitespace-pre font-mono text-xs"
+                      >
+                        {display}
+                      </span>
+                      <input
+                        value={arg}
+                        onChange={(e) => {
+                          const next = [...inputArgs];
+                          next[i] = e.target.value;
                           setInputArgs(next);
-                          // Focus previous (or next) input.
-                          const form = (e.currentTarget as HTMLInputElement).form;
-                          requestAnimationFrame(() => {
-                            const inputs = form?.querySelectorAll<HTMLInputElement>(
-                              'input[data-arg-input="true"]',
-                            );
-                            const target = inputs?.[Math.max(0, i - 1)];
-                            target?.focus();
-                            target?.setSelectionRange(target.value.length, target.value.length);
-                          });
-                        }
-                      }}
-                      data-arg-input="true"
-                      spellCheck={false}
-                      style={{ width }}
-                      className="min-w-0 border-0 bg-transparent px-0.5 font-mono text-xs text-foreground outline-none focus:ring-0"
-                      placeholder='{"name":"world"}'
-                    />
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Backspace" &&
+                            arg === "" &&
+                            inputArgs.length > 1
+                          ) {
+                            e.preventDefault();
+                            const next = inputArgs.filter((_, idx) => idx !== i);
+                            setInputArgs(next);
+                            const form = (e.currentTarget as HTMLInputElement).form;
+                            requestAnimationFrame(() => {
+                              const inputs = form?.querySelectorAll<HTMLInputElement>(
+                                'input[data-arg-input="true"]',
+                              );
+                              const target = inputs?.[Math.max(0, i - 1)];
+                              target?.focus();
+                              target?.setSelectionRange(target.value.length, target.value.length);
+                            });
+                          }
+                        }}
+                        data-arg-input="true"
+                        spellCheck={false}
+                        className="absolute inset-0 w-full border-0 bg-transparent p-0 font-mono text-xs text-foreground outline-none focus:ring-0"
+                        placeholder={placeholder}
+                      />
+                    </span>
                   </span>
                 );
               })}
