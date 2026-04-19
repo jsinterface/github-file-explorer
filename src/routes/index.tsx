@@ -296,6 +296,10 @@ function Index() {
             {view === "symbolTree" && symbolGraph && (
               <>
                 <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-chart-1)" }} />
+                  folder
+                </span>
+                <span className="flex items-center gap-1.5">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-muted-foreground)" }} />
                   file
                 </span>
