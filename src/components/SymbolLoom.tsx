@@ -285,6 +285,11 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       ribbonsByTarget.get(c.r.target.id)!.push(c);
     }
 
+    // Map each file to its assigned color (from fileArcs)
+    const fileColor = new Map(fileArcs.map((f) => [f.file, f.color]));
+    const colorForChord = (c: ChordSeg) =>
+      fileColor.get(c.r.target.file) ?? "var(--color-chart-3)";
+
     const chordPaths = container
       .append("g")
       .attr("class", "chords")
@@ -292,10 +297,10 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       .data(chords)
       .join("path")
       .attr("d", chordPath)
-      .attr("fill", "var(--color-chart-3)")
-      .attr("fill-opacity", 0.18)
-      .attr("stroke", "var(--color-chart-3)")
-      .attr("stroke-opacity", 0.35)
+      .attr("fill", colorForChord)
+      .attr("fill-opacity", 0.22)
+      .attr("stroke", colorForChord)
+      .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 0.4);
 
     chordPaths.append("title").text((c) => `${c.r.source.label} → ${c.r.target.label}`);
@@ -340,22 +345,14 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
           partnerIds.add(c.r.target.id);
         }
         chordPaths
-          .attr("fill-opacity", (c) => (related.has(c) ? 0.55 : 0.04))
-          .attr("stroke-opacity", (c) => (related.has(c) ? 0.8 : 0.05))
-          .attr("fill", (c) =>
-            related.has(c) ? "var(--color-primary)" : "var(--color-chart-3)",
-          )
-          .attr("stroke", (c) =>
-            related.has(c) ? "var(--color-primary)" : "var(--color-chart-3)",
-          );
+          .attr("fill-opacity", (c) => (related.has(c) ? 0.7 : 0.05))
+          .attr("stroke-opacity", (c) => (related.has(c) ? 0.9 : 0.05));
         nodeG.select("path").attr("opacity", (n) => (partnerIds.has((n as Placed).id) ? 1 : 0.25));
       })
       .on("mouseleave", () => {
         chordPaths
-          .attr("fill", "var(--color-chart-3)")
-          .attr("stroke", "var(--color-chart-3)")
-          .attr("fill-opacity", 0.18)
-          .attr("stroke-opacity", 0.35);
+          .attr("fill-opacity", 0.22)
+          .attr("stroke-opacity", 0.4);
         nodeG.select("path").attr("opacity", 1);
       });
 
