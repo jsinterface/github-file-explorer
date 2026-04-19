@@ -473,11 +473,11 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         incomingByExport.get(id)?.forEach((x) => relatedExports.add(x));
       });
 
-      // Highlight only the owner branch(es): union of ancestors of each target.
+      // Highlight ancestors of targets AND of their referenced/referencing exports.
       const folders = new Set<string>();
       const files = new Set<string>();
       const links = new Set<string>();
-      targetIds.forEach((tid) => {
+      relatedExports.forEach((tid) => {
         const a = leafAncestors.get(tid);
         if (!a) return;
         a.folders.forEach((f) => folders.add(f));
