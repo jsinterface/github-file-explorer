@@ -826,15 +826,23 @@ export function SymbolTreeGraph({
     }
 
     node
-      .on("mouseenter", (_e, d) => {
+      .on("mouseenter", (e, d) => {
         if (d.node.data.kind === "export") {
           applyHighlight(new Set([d.node.data.id]));
         } else {
           const exports = exportsByContainer.get(d.node.data.id) ?? new Set();
           applyHighlight(exports);
         }
+        d3.select(e.currentTarget as SVGGElement)
+          .select<SVGTextElement>("text.node-label")
+          .attr("filter", "url(#label-glow)");
       })
-      .on("mouseleave", clearHighlight)
+      .on("mouseleave", (e) => {
+        clearHighlight();
+        d3.select(e.currentTarget as SVGGElement)
+          .select<SVGTextElement>("text.node-label")
+          .attr("filter", null);
+      })
       .on("click", (_e, d) => {
         if (d.node.data.kind !== "export") return;
         if (d.node.data.exportKind !== "function") return;
