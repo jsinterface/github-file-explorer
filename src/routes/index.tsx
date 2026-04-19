@@ -141,6 +141,8 @@ function Index() {
   const [result, setResult] = useState<FetchResult | null>(null);
   const [importGraph, setImportGraph] = useState<ImportGraph | null>(null);
   const [symbolGraph, setSymbolGraph] = useState<SymbolGraph | null>(null);
+  const [inputJson, setInputJson] = useState<string>("{}");
+  const [repoMeta, setRepoMeta] = useState<{ owner: string; repo: string; branch: string } | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
