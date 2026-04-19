@@ -327,7 +327,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const linkSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-border)")
+      .attr("stroke", "var(--color-muted-foreground)")
       .attr("stroke-width", 1)
       .selectAll<SVGPathElement, { s: Placed; t: Placed }>("path")
       .data(allLinks)
@@ -383,7 +383,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-border)")
+      .attr("fill", "var(--color-muted-foreground)")
       .attr("fill-opacity", 0.6);
 
     // Arrow marker for default (no hover) reference edges, matches file edge color.
@@ -398,7 +398,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-border)");
+      .attr("fill", "var(--color-muted-foreground)");
 
     // Arrow marker for incoming highlighted edges (inverse color).
     defs
@@ -417,7 +417,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     const refSel = container
       .append("g")
       .attr("fill", "none")
-      .attr("stroke", "var(--color-border)")
+      .attr("stroke", "var(--color-muted-foreground)")
       .attr("stroke-width", 0.7)
       .selectAll<SVGPathElement, RefPair>("path")
       .data(refPairs)
@@ -603,7 +603,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       linkSel.attr("stroke-opacity", FULL);
       folderArcSel.attr("stroke-opacity", FULL);
       refSel
-        .attr("stroke", "var(--color-border)")
+        .attr("stroke", "var(--color-muted-foreground)")
         .attr("stroke-opacity", 1)
         .attr("marker-end", "url(#arrow-ref-default)");
       node.style("opacity", FULL);
@@ -714,7 +714,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-2.5 w-0.5"
-            style={{ background: "var(--color-border)" }}
+            style={{ background: "var(--color-muted-foreground)" }}
           />
           reference
         </span>
