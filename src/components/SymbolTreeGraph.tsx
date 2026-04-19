@@ -1106,7 +1106,7 @@ export function SymbolTreeGraph({
                 step={0.25}
                 value={speed}
                 onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                className="h-1 flex-1 cursor-pointer accent-[#ffff00]"
+                className="h-1 flex-1 cursor-pointer accent-[#6d4c41]"
               />
               <span className="w-8 shrink-0 text-right font-semibold text-foreground">
                 {speed.toFixed(2)}x
