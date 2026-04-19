@@ -67,9 +67,13 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
     const size = 960;
     const cx = size / 2;
     const cy = size / 2;
-    const outerR = size / 2 - 80;
-    const ringR = outerR + 14;
-    const fileArcR = outerR + 28;
+    // Node arc band sits as part of the outer ring.
+    const nodeOuterR = size / 2 - 80;
+    const nodeInnerR = nodeOuterR - 14;
+    // File-group band sits just outside the node band.
+    const fileInnerR = nodeOuterR + 4;
+    const fileOuterR = fileInnerR + 6;
+    const fileLabelR = fileOuterR + 6;
 
     // Each node gets an arc length proportional to its indegree.
     // We give every node a small minimum arc so zero-indegree connected
@@ -171,8 +175,8 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       .join("text")
       .attr("transform", (d) => {
         const a = (d.a0 + d.a1) / 2;
-        const x = cx + fileArcR * Math.cos(a);
-        const y = cy + fileArcR * Math.sin(a);
+        const x = cx + fileLabelR * Math.cos(a);
+        const y = cy + fileLabelR * Math.sin(a);
         const deg = (a * 180) / Math.PI;
         // Flip text on the left half so it stays upright-ish
         const flip = a > Math.PI / 2 && a < (3 * Math.PI) / 2;
@@ -198,13 +202,12 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
         return parts.slice(-2).join("/");
       });
 
-    // ---- Ribbons (bezier through center) ----
+    // ---- Ribbons (bezier through center, attaching at inner edge of node band) ----
     function ribbonPath(r: Ribbon): string {
-      const sx = cx + outerR * Math.cos(r.source.angle);
-      const sy = cy + outerR * Math.sin(r.source.angle);
-      const tx = cx + outerR * Math.cos(r.target.angle);
-      const ty = cy + outerR * Math.sin(r.target.angle);
-      // Quadratic-ish via cubic with both controls at the center for a smooth chord.
+      const sx = cx + nodeInnerR * Math.cos(r.source.angle);
+      const sy = cy + nodeInnerR * Math.sin(r.source.angle);
+      const tx = cx + nodeInnerR * Math.cos(r.target.angle);
+      const ty = cy + nodeInnerR * Math.sin(r.target.angle);
       return `M${sx},${sy} C${cx},${cy} ${cx},${cy} ${tx},${ty}`;
     }
 
@@ -221,36 +224,48 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       .append("title")
       .text((r) => `${r.source.label} → ${r.target.label}`);
 
-    // ---- Node dots scaled by indegree ----
-    const maxIn = Math.max(1, ...placed.map((p) => p.indegree));
-    const radiusFor = (p: Placed) =>
-      (p.kind === "function" ? 3 : 2) + 6 * Math.sqrt(p.indegree / maxIn);
+    // ---- Node arcs as part of the surrounding ring (scaled by indegree) ----
+    const nodeArcGen = d3
+      .arc<Placed>()
+      .innerRadius(nodeInnerR)
+      .outerRadius(nodeOuterR)
+      .startAngle((d) => d.a0 + Math.PI / 2)
+      .endAngle((d) => d.a1 + Math.PI / 2)
+      .padAngle(0.0015);
 
-    const node = container
+    const nodeG = container
       .append("g")
+      .attr("transform", `translate(${cx}, ${cy})`)
       .selectAll("g")
       .data(placed)
-      .join("g")
-      .attr("transform", (d) => `translate(${d.x},${d.y})`);
+      .join("g");
 
-    node
-      .append("circle")
-      .attr("r", radiusFor)
+    nodeG
+      .append("path")
+      .attr("d", (d) => nodeArcGen(d)!)
       .attr("fill", (d) =>
         d.kind === "function" ? "var(--color-chart-1)" : "var(--color-chart-2)",
       )
       .attr("stroke", "var(--color-background)")
-      .attr("stroke-width", 0.6);
+      .attr("stroke-width", 0.4);
 
-    node.append("title").text((d) => `${d.label} · in:${d.indegree}`);
+    nodeG.append("title").text((d) => `${d.label} · in:${d.indegree}`);
 
-    // ---- Node labels along the radial direction ----
-    node
+    // ---- Node labels along the radial direction (only when arc is wide enough) ----
+    const MIN_LABEL_ARC = 0.012; // radians
+    nodeG
+      .filter((d) => d.a1 - d.a0 >= MIN_LABEL_ARC)
       .append("text")
       .attr("transform", (d) => {
         const deg = (d.angle * 180) / Math.PI;
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
-        return flip ? `rotate(${deg + 180})` : `rotate(${deg})`;
+        // Position at outer edge of arc band
+        const r = nodeOuterR + 2;
+        const x = r * Math.cos(d.angle);
+        const y = r * Math.sin(d.angle);
+        return flip
+          ? `translate(${x},${y}) rotate(${deg + 180})`
+          : `translate(${x},${y}) rotate(${deg})`;
       })
       .attr("text-anchor", (d) => {
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
@@ -258,7 +273,7 @@ export function SymbolLoomView({ data }: { data: SymbolGraphData }) {
       })
       .attr("dx", (d) => {
         const flip = d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2;
-        return flip ? -(radiusFor(d) + 2) : radiusFor(d) + 2;
+        return flip ? -3 : 3;
       })
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
