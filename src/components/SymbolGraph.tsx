@@ -59,10 +59,10 @@ export function SymbolGraphView({ data }: { data: SymbolGraphData }) {
       .attr("marker-end", "url(#arrow-sym)");
 
     const node = container
-      .filter((d) => d.kind !== "folder")
       .append("g")
       .selectAll<SVGGElement, SimNode>("g")
       .data(nodes)
+      .filter((d) => d.kind !== "folder")
       .join("g")
       .style("cursor", "grab");
 
