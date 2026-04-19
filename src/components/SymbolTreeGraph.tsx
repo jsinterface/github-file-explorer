@@ -412,24 +412,22 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     });
 
     // ---------- Nodes ----------
-    // Build indegree map for export nodes (number of incoming references).
-    const maxIndegree = Math.max(
-      1,
-      ...Array.from(incomingByExport.values()).map((s) => s.size),
-    );
     const exportColorScale = d3
       .scaleSequential<string>((t) => d3.interpolateTurbo(0.1 + t * 0.85))
-      .domain([0, Math.log1p(maxIndegree)]);
+      .domain([0, Math.log1p(maxIndeg)]);
 
     const colorFor = (n: RawNode) => {
       if (n.kind === "folder") return "var(--color-chart-1)";
       if (n.kind === "file") return "var(--color-chart-2)";
-      const indeg = incomingByExport.get(n.id)?.size ?? 0;
+      const indeg = indegByExport.get(n.id) ?? 0;
       return exportColorScale(Math.log1p(indeg));
     };
 
-    const radiusFor = (k: RawNode["kind"]) =>
-      k === "folder" ? 4 : k === "file" ? 3.5 : 2.5;
+    const radiusFor = (n: RawNode) => {
+      if (n.kind === "folder") return 4;
+      if (n.kind === "file") return 3.5;
+      return exportRadiusFor(n.id);
+    };
 
     // Folder ring arcs (drawn before nodes so node circles sit on top).
     const arcGen = d3
