@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Github } from "lucide-react";
+import { Github, Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -141,7 +141,9 @@ function Index() {
   const [result, setResult] = useState<FetchResult | null>(null);
   const [importGraph, setImportGraph] = useState<ImportGraph | null>(null);
   const [symbolGraph, setSymbolGraph] = useState<SymbolGraph | null>(null);
-  const [inputJson, setInputJson] = useState<string>("{}");
+  const [inputArgs, setInputArgs] = useState<string[]>(["{}"]);
+  // Combined string passed downstream: parsed as a JSON array then spread as args.
+  const inputJson = inputArgs.join(",");
   const [repoMeta, setRepoMeta] = useState<{ owner: string; repo: string; branch: string } | null>(null);
 
   async function handleSubmit(e: FormEvent) {
@@ -350,16 +352,36 @@ function Index() {
             </SelectContent>
           </Select>
           {(view === "symbolTree" || view === "symbols" || view === "symbolsLoom") && (
-            <div className="flex flex-1 items-center font-mono text-xs text-muted-foreground">
+            <div className="flex items-center font-mono text-xs text-muted-foreground">
               <span className="select-none pl-1 pr-0.5 text-2xl leading-none">(</span>
-              <Input
-                id="input-json"
-                value={inputJson}
-                onChange={(e) => setInputJson(e.target.value)}
-                spellCheck={false}
-                className="flex-1 rounded-none border-0 bg-transparent px-1 font-mono text-xs shadow-none focus-visible:ring-0"
-                placeholder='{"name": "world"}'
-              />
+              {inputArgs.map((arg, i) => {
+                const width = `${Math.max(2, arg.length || (i === 0 ? 12 : 2))}ch`;
+                return (
+                  <span key={i} className="flex items-center">
+                    {i > 0 && <span className="select-none px-0.5">,</span>}
+                    <input
+                      value={arg}
+                      onChange={(e) => {
+                        const next = [...inputArgs];
+                        next[i] = e.target.value;
+                        setInputArgs(next);
+                      }}
+                      spellCheck={false}
+                      style={{ width }}
+                      className="min-w-0 border-0 bg-transparent px-0.5 font-mono text-xs text-foreground outline-none focus:ring-0"
+                      placeholder='{"name":"world"}'
+                    />
+                  </span>
+                );
+              })}
+              <button
+                type="button"
+                aria-label="Add argument"
+                onClick={() => setInputArgs((args) => [...args, args[args.length - 1] ?? "{}"])}
+                className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-[#3a3a3a] hover:text-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
               <span className="select-none pl-0.5 pr-1 text-2xl leading-none">)</span>
             </div>
           )}
