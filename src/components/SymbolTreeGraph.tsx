@@ -334,7 +334,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "var(--color-chart-3)")
-      .attr("fill-opacity", 0.12);
+      .attr("fill-opacity", 0.04);
 
     // Arrow marker for incoming highlighted edges (inverse color).
     defs
@@ -483,7 +483,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
       .style("cursor", "pointer");
 
-    const DIM = 0.12;
+    const DIM = 0.04;
     const FULL = 1;
 
     // targetIds: export ids this hover "owns" (1 for an export, all under a file/folder).
