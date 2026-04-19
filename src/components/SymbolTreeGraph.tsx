@@ -103,6 +103,7 @@ export function SymbolTreeGraph({
     result: { ok: true; value: unknown } | { ok: false; error: string } | null;
     sourceExportId: string;
     edgeOrder: string[]; // ordered target export ids matching call sites
+    completed: boolean;
   };
   const [run, setRun] = useState<RunState | null>(null);
   const runRef = useRef<RunState | null>(null);
