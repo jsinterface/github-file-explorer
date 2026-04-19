@@ -195,6 +195,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       a0: number;
       a1: number;
       radius: number;
+      depth: number;
       name: string;
     };
     const folderArcs: FolderArc[] = [];
@@ -217,10 +218,19 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
           a0,
           a1,
           radius: fp.radius,
+          depth: n.depth ?? 0,
           name: n.data.name,
         });
       });
     });
+
+    // Outer rings (smaller depth) get larger labels.
+    const allMaxDepth = Math.max(1, ...placed.map((p) => p.depth));
+    function ringFontSize(depth: number, base: number): number {
+      const t = Math.min(1, depth / allMaxDepth);
+      const scale = 1.6 - t * (1.6 - 0.85);
+      return Math.max(6, Math.round(base * scale));
+    }
 
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
@@ -373,12 +383,12 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     container
       .append("g")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", 9)
       .attr("fill", "var(--color-chart-1)")
       .selectAll("text")
       .data(folderArcs)
       .join("text")
       .attr("dy", "0.32em")
+      .attr("font-size", (d) => ringFontSize(d.depth, 9))
       .append("textPath")
       .attr("href", (d) => `#folder-arc-label-${safeId(d.id)}`)
       .attr("startOffset", "50%")
@@ -422,7 +432,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       })
       .attr("dy", "0.32em")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("font-size", (d) => (d.node.data.kind === "folder" ? 9 : d.node.data.kind === "file" ? 8 : 7))
+      .attr("font-size", (d) => ringFontSize(d.depth, d.node.data.kind === "file" ? 8 : 7))
       .attr("fill", "var(--color-foreground)")
       .text((d) => d.node.data.name);
 
