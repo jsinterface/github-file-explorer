@@ -1068,7 +1068,7 @@ export function SymbolTreeGraph({
           />
         )}
         {stack.length > 0 && (
-          <div className="pointer-events-none absolute bottom-20 left-4 z-20 flex max-w-sm flex-col gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
+          <div className="pointer-events-none absolute top-4 left-4 z-20 flex max-w-sm flex-col gap-1.5 rounded-md border border-border bg-background/80 p-2 text-xs shadow-md backdrop-blur-md">
             {stack.map((f, i) => {
               const total = Math.max(1, f.edgeOrder.length);
               const done = f.direction === "returning" ? f.step + 1 : f.step;
