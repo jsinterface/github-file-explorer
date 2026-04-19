@@ -694,6 +694,7 @@ export function SymbolTreeGraph({
       .data(placed)
       .join("g")
       .attr("transform", (d) => `translate(${d.x},${d.y})`)
+      .attr("data-node-id", (d) => d.node.data.id)
       .style("cursor", "pointer");
 
     const DIM = 0.04;
