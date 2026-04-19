@@ -862,30 +862,22 @@ export function SymbolTreeGraph({
     paths.forEach((p) => {
       const src = p.getAttribute("data-src");
       const tgt = p.getAttribute("data-tgt");
+      // Never modify the edge color/width during execution — only opacity
+      // is used to focus the viewer on the active source's outgoing edges.
+      p.style.stroke = "";
+      p.style.strokeWidth = "";
+      p.style.filter = "";
       if (src !== run.sourceExportId) {
         p.style.strokeOpacity = "0.05";
-        p.style.stroke = "";
-        p.style.strokeWidth = "";
-        p.style.filter = "";
         return;
       }
       if (tgt === activeTarget) {
-        // No edge glow; just keep the edge slightly emphasized so user sees the path.
-        p.style.stroke = "";
-        p.style.strokeWidth = "1.2";
         p.style.strokeOpacity = "0.9";
-        p.style.filter = "";
         activePath = p;
       } else if (tgt && visited.has(tgt)) {
-        p.style.stroke = "#536dfe";
-        p.style.strokeWidth = "1.4";
         p.style.strokeOpacity = "0.9";
-        p.style.filter = "";
       } else {
-        p.style.stroke = "";
-        p.style.strokeWidth = "";
         p.style.strokeOpacity = "0.4";
-        p.style.filter = "";
       }
     });
 
