@@ -471,13 +471,13 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
         .attr("stroke-opacity", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          return relatedExports.has(sId) || relatedExports.has(tId) ? FULL : DIM;
+          return sId === id || tId === id ? FULL : DIM;
         })
         .attr("marker-end", (p) => {
           const sId = p.s.node.data.id;
           const tId = p.t.node.data.id;
-          return relatedExports.has(sId) || relatedExports.has(tId) 
-            ? "url(#arrow-ref-full)" 
+          return sId === id || tId === id
+            ? "url(#arrow-ref-full)"
             : "url(#arrow-ref-dim)";
         });
       node.style("opacity", (n) => (relatedExports.has(n.node.data.id) || n.node.data.id === id ? FULL : DIM));
