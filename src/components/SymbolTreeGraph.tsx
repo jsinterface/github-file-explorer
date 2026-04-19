@@ -757,7 +757,12 @@ export function SymbolTreeGraph({
           applyHighlight(exports);
         }
       })
-      .on("mouseleave", clearHighlight);
+      .on("mouseleave", clearHighlight)
+      .on("click", (_e, d) => {
+        if (d.node.data.kind !== "export") return;
+        if (d.node.data.exportKind !== "function") return;
+        handleExportClick(d.node.data.id, "function");
+      });
 
     // Folder arcs hoverable too.
     folderArcSel
