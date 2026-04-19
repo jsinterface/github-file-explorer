@@ -383,7 +383,7 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
       .attr("orient", "auto")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "var(--color-chart-3)")
+      .attr("fill", "#ffff00")
       .attr("fill-opacity", 0.04);
 
     // Arrow marker for incoming highlighted edges (inverse color).
