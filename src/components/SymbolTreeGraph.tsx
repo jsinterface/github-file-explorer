@@ -730,7 +730,7 @@ export function SymbolTreeGraph({
           const tId = p.t.node.data.id;
           // Outgoing from a target = referenced edge; incoming to a target = referencing edge.
           if (targetIds.has(sId)) return "#5c6bc0";
-          if (targetIds.has(tId)) return "#536dfe";
+          if (targetIds.has(tId)) return "#6d4c41";
           return "var(--color-muted-foreground)";
         })
         .attr("stroke-opacity", (p) => {
