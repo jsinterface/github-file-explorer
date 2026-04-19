@@ -883,7 +883,7 @@ export function SymbolTreeGraph({
       .on("mouseleave", clearHighlight);
 
     node
-      .filter(({ n }) => n.data.kind !== "folder")
+      .filter(({ node }) => node.data.kind !== "folder")
       .append("circle")
       .attr("r", (d) => radiusFor(d.node.data))
       .attr("fill", (d) => colorFor(d.node.data));
@@ -895,7 +895,7 @@ export function SymbolTreeGraph({
 
     // All labels point radially outward (away from the chart center).
     node
-      .filter(({ n }) => n.data.kind !== "folder")
+      .filter(({ node }) => node.data.kind !== "folder")
       .append("text")
       .attr("class", "node-label")
       .attr("transform", (d) => {
