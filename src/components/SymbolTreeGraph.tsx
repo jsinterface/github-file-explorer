@@ -510,7 +510,11 @@ export function SymbolTreeGraph({ data }: { data: Record<string, SymbolTreeNode>
     container
       .append("g")
       .attr("font-family", "ui-monospace, monospace")
-      .attr("fill", "var(--color-chart-1)")
+      .attr("fill", "white")
+      .attr("stroke", "black")
+      .attr("stroke-width", 2)
+      .attr("stroke-linejoin", "round")
+      .attr("paint-order", "stroke")
       .selectAll<SVGTextElement, FolderArc>("text")
       .data(folderArcs)
       .join("text")
